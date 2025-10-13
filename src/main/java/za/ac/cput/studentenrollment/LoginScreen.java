@@ -1,6 +1,5 @@
 package za.ac.cput.studentenrollment.ui;
 
-import za.ac.cput.studentenrollment.modelclasses.Student;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
