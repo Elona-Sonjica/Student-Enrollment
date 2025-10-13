@@ -32,7 +32,6 @@ public class EnrollmentDAO {
             stmt.execute(sql);
             System.out.println("Enrollments table created successfully");
         } catch (SQLException e) {
-            // Table might already exist - this is normal
             if (!e.getSQLState().equals("X0Y32")) { // Ignore "table already exists" error
                 System.out.println("Note creating enrollments table: " + e.getMessage());
             }
