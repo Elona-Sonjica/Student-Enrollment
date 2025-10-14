@@ -31,7 +31,6 @@ public class DBConnection {
             createStudentsTable(stmt);
             createCoursesTable(stmt);
             createEnrollmentsTable(stmt);
-            createUsersTable(stmt);
             insertSampleData(stmt);
 
         } catch (SQLException e) {
@@ -69,20 +68,9 @@ public class DBConnection {
         try { stmt.executeUpdate(sql); } catch (SQLException e) {}
     }
 
-    private static void createUsersTable(Statement stmt) throws SQLException {
-        String sql = "CREATE TABLE users (" +
-                "username VARCHAR(50) PRIMARY KEY, " +
-                "password VARCHAR(100) NOT NULL, " +
-                "role VARCHAR(20) NOT NULL, " +
-                "student_number VARCHAR(20), " +
-                "FOREIGN KEY (student_number) REFERENCES students(student_number))";
-        try { stmt.executeUpdate(sql); } catch (SQLException e) {}
-    }
-
     private static void insertSampleData(Statement stmt) throws SQLException {
         insertSampleStudents(stmt);
         insertSampleCourses(stmt);
-        insertSampleUsers(stmt);
         insertSampleEnrollments(stmt);
     }
 
@@ -90,7 +78,8 @@ public class DBConnection {
         String sql = "INSERT INTO students (student_number, name, surname, email, password) VALUES " +
                 "('12345', 'John', 'Doe', 'john@cput.ac.za', 'password123'), " +
                 "('23456', 'Jane', 'Smith', 'jane@cput.ac.za', 'password123'), " +
-                "('34567', 'Mike', 'Johnson', 'mike@cput.ac.za', 'password123')";
+                "('34567', 'Mike', 'Johnson', 'mike@cput.ac.za', 'password123'), " +
+                "('admin', 'Admin', 'User', 'admin@cput.ac.za', 'admin123')";
         try { stmt.executeUpdate(sql); } catch (SQLException e) {}
     }
 
@@ -99,14 +88,6 @@ public class DBConnection {
                 "('ADP262S', 'Applications Development Practice', 'Dr. Smith'), " +
                 "('ITS362S', 'Information Systems', 'Prof. Johnson'), " +
                 "('WTW364S', 'Web Technology', 'Dr. Brown')";
-        try { stmt.executeUpdate(sql); } catch (SQLException e) {}
-    }
-
-    private static void insertSampleUsers(Statement stmt) {
-        String sql = "INSERT INTO users (username, password, role, student_number) VALUES " +
-                "('admin', 'admin123', 'admin', NULL), " +
-                "('12345', 'password123', 'student', '12345'), " +
-                "('23456', 'password123', 'student', '23456')";
         try { stmt.executeUpdate(sql); } catch (SQLException e) {}
     }
 

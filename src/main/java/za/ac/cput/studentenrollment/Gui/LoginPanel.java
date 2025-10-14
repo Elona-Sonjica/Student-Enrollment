@@ -8,6 +8,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import za.ac.cput.studentenrollment.connection.ClientCommunicator;
+import za.ac.cput.studentenrollment.connection.RequestType;
+import za.ac.cput.studentenrollment.connection.Response;
 import za.ac.cput.studentenrollment.modelclasses.Student;
 /**
  *
@@ -163,7 +166,6 @@ public class LoginPanel extends JPanel {
                             lblStatus.setText("Login successful! Loading dashboard...");
                             lblStatus.setForeground(Color.GREEN);
                             
-                            // Show appropriate dashboard based on role
                             if (isAdmin) {
                                 showAdminPanel();
                             } else {
@@ -171,7 +173,7 @@ public class LoginPanel extends JPanel {
                                 showStudentPanel(student);
                             }
                             
-                            // Clear password field for security
+                            // Clear password field
                             txtPassword.setText("");
                             
                         } else {
@@ -193,7 +195,18 @@ public class LoginPanel extends JPanel {
     }
 
     private void showAdminPanel() {
-        AdminPanel adminPanel = new AdminPanel(cardPanel, cardLayout, communicator);
+        // Create a simple admin panel for now
+        JPanel adminPanel = new JPanel();
+        adminPanel.setLayout(new BorderLayout());
+        adminPanel.add(new JLabel("Admin Dashboard - Under Construction", JLabel.CENTER), BorderLayout.CENTER);
+        
+        JButton backButton = new JButton("Back to Login");
+        backButton.addActionListener(e -> {
+            cardLayout.show(cardPanel, "login");
+            clearForm();
+        });
+        adminPanel.add(backButton, BorderLayout.SOUTH);
+        
         cardPanel.add(adminPanel, "admin");
         cardLayout.show(cardPanel, "admin");
     }

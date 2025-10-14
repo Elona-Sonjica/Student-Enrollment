@@ -5,6 +5,7 @@ import za.ac.cput.studentenrollment.Database.DBConnection;
 import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
+import za.ac.cput.studentenrollment.Gui.LoginScreen;
 
 public class MainApplication {
 

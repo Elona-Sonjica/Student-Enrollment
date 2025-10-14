@@ -1,13 +1,20 @@
 package za.ac.cput.studentenrollment.Gui;
 
+import com.sun.net.httpserver.Request;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.util.List;
+import javax.swing.table.DefaultTableModel;
+import za.ac.cput.studentenrollment.connection.ClientCommunicator;
+import za.ac.cput.studentenrollment.connection.RequestType;
+import za.ac.cput.studentenrollment.connection.Response;
 import za.ac.cput.studentenrollment.modelclasses.Course;
 import za.ac.cput.studentenrollment.modelclasses.Student;
 
+/**
+ *
+ * @author elzas
+ */
 public class StudentPanel extends JPanel {
     private JPanel cardPanel;
     private CardLayout cardLayout;
@@ -448,8 +455,13 @@ public class StudentPanel extends JPanel {
         if (confirm == JOptionPane.YES_OPTION) {
             communicator.disconnect();
             cardLayout.show(cardPanel, "login");
-            LoginPanel loginPanel = (LoginPanel) cardPanel.getComponent(0);
-            loginPanel.clearForm();
+            // Find and clear the login panel
+            for (Component comp : cardPanel.getComponents()) {
+                if (comp instanceof LoginPanel) {
+                    ((LoginPanel) comp).clearForm();
+                    break;
+                }
+            }
         }
     }
 
@@ -468,6 +480,11 @@ public class StudentPanel extends JPanel {
 
     private void showMessage(String title, String message, int messageType) {
         JOptionPane.showMessageDialog(this, message, title, messageType);
+    }
+
+    private void showMessage(String message, Color color) {
+        // Overloaded method for simple messages
+        JOptionPane.showMessageDialog(this, message);
     }
 
     // Custom renderer for Course ComboBox

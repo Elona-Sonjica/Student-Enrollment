@@ -1,10 +1,13 @@
-package za.ac.cput.studentenrollment.ui;
+package za.ac.cput.studentenrollment.Gui;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
+import javax.swing.border.Border;
+import javax.swing.event.DocumentListener;
+import org.w3c.dom.events.DocumentEvent;
 
 public class LoginScreen extends JFrame {
     private JTextField usernameField;
@@ -89,8 +92,7 @@ public class LoginScreen extends JFrame {
         JPanel formPanel = new JPanel();
         formPanel.setOpaque(false);
         formPanel.setLayout(new GridBagLayout());
-        formPanel.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(15, new Color(255, 255, 255, 180)),
+        formPanel.setBorder(BorderFactory.createCompoundBorder((Border) new RoundedBorder(15, new Color(255, 255, 255, 180)),
                 new EmptyBorder(30, 25, 30, 25)
         ));
 

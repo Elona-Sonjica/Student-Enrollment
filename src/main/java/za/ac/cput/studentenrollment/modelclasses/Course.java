@@ -14,16 +14,15 @@ public class Course implements Serializable {
     private String courseCode;
     private String title;
     private String instructor;
-    
+
     public Course() {}
-    
+
     public Course(String courseCode, String title, String instructor) {
         this.courseCode = courseCode;
         this.title = title;
         this.instructor = instructor;
     }
-    
-    // Getters and Setters
+
     public String getCourseCode() { return courseCode; }
     public void setCourseCode(String courseCode) { this.courseCode = courseCode; }
     
@@ -35,6 +34,19 @@ public class Course implements Serializable {
     
     @Override
     public String toString() {
-        return courseCode + " - " + title + " (" + instructor + ")";
+        return courseCode + " - " + title;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Course course = (Course) obj;
+        return courseCode.equals(course.courseCode);
+    }
+    
+    @Override
+    public int hashCode() {
+        return courseCode.hashCode();
     }
 }
