@@ -5,10 +5,7 @@
 package za.ac.cput.studentenrollment.modelclasses;
 
 import java.io.Serializable;
-/**
- *
- * @author elzas
- */
+
 public class Student implements Serializable {
     private String studentNumber;
     private String name;
