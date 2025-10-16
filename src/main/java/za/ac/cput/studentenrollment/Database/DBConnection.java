@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DBConnection {
-    private static final String URL = "jdbc:derby:StudentEnrolmentDB;create=true";
+    private static final String URL = "jdbc:derby:StudentEnrolmentDB;";
     private static final String USER = "Elona";
     private static final String PASSWORD = "Elona123";
     private static Connection connection = null;
