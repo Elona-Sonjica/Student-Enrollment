@@ -4,7 +4,6 @@
  */
 package za.ac.cput.studentenrollment.connection;
 
-import com.sun.net.httpserver.Request;
 import java.io.*;
 import java.net.Socket;
 /**
@@ -13,7 +12,7 @@ import java.net.Socket;
  */
 public class ClientCommunicator {
     private static final String SERVER_HOST = "localhost";
-    private static final int SERVER_PORT = 12345;
+    private static final int SERVER_PORT = 6666;
     
     private Socket socket;
     private ObjectOutputStream output;

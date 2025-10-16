@@ -21,8 +21,7 @@ public class StudentDAO {
                     "name VARCHAR(50) NOT NULL, " +
                     "surname VARCHAR(50) NOT NULL, " +
                     "email VARCHAR(100) NOT NULL, " +
-                    "password VARCHAR(50) NOT NULL, " +
-                    "role VARCHAR(10) DEFAULT 'student')";
+                    "password VARCHAR(50) NOT NULL)";
         
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement()) {
@@ -37,7 +36,7 @@ public class StudentDAO {
     }
     
     public boolean addStudent(Student student) {
-        String sql = "INSERT INTO students (student_number, name, surname, email, password, role) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO students (student_number, name, surname, email, password) VALUES (?, ?, ?, ?, ?)";
         
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -47,7 +46,6 @@ public class StudentDAO {
             pstmt.setString(3, student.getSurname());
             pstmt.setString(4, student.getEmail());
             pstmt.setString(5, student.getPassword());
-            pstmt.setString(6, "student");
             
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
@@ -85,7 +83,7 @@ public class StudentDAO {
     
     public List<Student> getAllStudents() {
         List<Student> students = new ArrayList<>();
-        String sql = "SELECT * FROM students WHERE role = 'student'";
+        String sql = "SELECT * FROM students WHERE student_number != 'admin'";
         
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();

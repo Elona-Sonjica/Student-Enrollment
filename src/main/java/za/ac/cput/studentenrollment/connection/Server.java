@@ -3,24 +3,17 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package za.ac.cput.studentenrollment.connection;
-import com.sun.net.httpserver.Request;
+
 import java.io.*;
 import java.net.*;
+import java.sql.Connection;
 import java.util.List;
 import za.ac.cput.studentenrollment.DAO.CourseDAO;
 import za.ac.cput.studentenrollment.DAO.EnrollmentDAO;
 import za.ac.cput.studentenrollment.DAO.StudentDAO;
-import static za.ac.cput.studentenrollment.connection.RequestType.ADD_COURSE;
-import static za.ac.cput.studentenrollment.connection.RequestType.ADD_STUDENT;
-import static za.ac.cput.studentenrollment.connection.RequestType.AUTHENTICATE;
-import static za.ac.cput.studentenrollment.connection.RequestType.ENROLL_STUDENT;
-import static za.ac.cput.studentenrollment.connection.RequestType.GET_ALL_COURSES;
-import static za.ac.cput.studentenrollment.connection.RequestType.GET_ALL_STUDENTS;
-import static za.ac.cput.studentenrollment.connection.RequestType.GET_COURSE_ENROLLMENTS;
-import static za.ac.cput.studentenrollment.connection.RequestType.GET_STUDENT_ENROLLMENTS;
-import static za.ac.cput.studentenrollment.connection.RequestType.LOGOUT;
 import za.ac.cput.studentenrollment.modelclasses.Course;
 import za.ac.cput.studentenrollment.modelclasses.Student;
+
 /**
  *
  * @author elzas
@@ -28,7 +21,7 @@ import za.ac.cput.studentenrollment.modelclasses.Student;
 public class Server {
     private ServerSocket serverSocket;
     private boolean running;
-    private static final int PORT = 12345;
+    private static final int PORT = 6666;
 
     public void start() {
         try {
@@ -51,22 +44,19 @@ public class Server {
         }
     }
 
-    private void initializeDatabase() {
-        StudentDAO studentDAO = new StudentDAO();
-        CourseDAO courseDAO = new CourseDAO();
-        EnrollmentDAO enrollmentDAO = new EnrollmentDAO();
-        
-        studentDAO.createTable();
-        courseDAO.createTable();
-        enrollmentDAO.createTable();
-        
-        // Add sample data
-        addSampleData();
-        System.out.println("Database ready");
+private void initializeDatabase() {
+    // This will trigger the database initialization through DBConnection.getConnection()
+    try {
+        Connection conn = za.ac.cput.studentenrollment.Database.DBConnection.getConnection();
+        System.out.println("Database checked and ready");
+    } catch (Exception e) {
+        System.out.println("Database initialization failed: " + e.getMessage());
     }
+}
 
     private void addSampleData() {
         CourseDAO courseDAO = new CourseDAO();
+        StudentDAO studentDAO = new StudentDAO();
         
         Course[] courses = {
             new Course("ADF262S", "Application Development Fundamentals", "Mr Burger"),
@@ -83,7 +73,6 @@ public class Server {
         }
 
         // Add admin user
-        StudentDAO studentDAO = new StudentDAO();
         Student admin = new Student("admin", "Admin", "User", "admin@cput.ac.za", "admin123");
         if (studentDAO.getStudentByNumber("admin") == null) {
             studentDAO.addStudent(admin);
@@ -118,9 +107,12 @@ public class Server {
                 input = new ObjectInputStream(clientSocket.getInputStream());
 
                 while (true) {
-                    Request request = (Request) input.readObject();
+                    // Use fully qualified name to avoid import conflict
+                    za.ac.cput.studentenrollment.connection.Request request = 
+                        (za.ac.cput.studentenrollment.connection.Request) input.readObject();
                     Response response = processRequest(request);
                     output.writeObject(response);
+                    output.flush();
                     
                     if (request.getType() == RequestType.LOGOUT) {
                         break;
@@ -133,7 +125,7 @@ public class Server {
             }
         }
 
-        private Response processRequest(Request request) {
+        private Response processRequest(za.ac.cput.studentenrollment.connection.Request request) {
             try {
                 switch (request.getType()) {
                     case AUTHENTICATE:
@@ -162,7 +154,7 @@ public class Server {
             }
         }
 
-        private Response handleAuthentication(Request request) {
+        private Response handleAuthentication(za.ac.cput.studentenrollment.connection.Request request) {
             Object[] data = (Object[]) request.getData();
             String studentNumber = (String) data[0];
             String password = (String) data[1];
@@ -191,7 +183,7 @@ public class Server {
             return new Response(ResponseStatus.SUCCESS, courses);
         }
 
-        private Response handleEnrollStudent(Request request) {
+        private Response handleEnrollStudent(za.ac.cput.studentenrollment.connection.Request request) {
             Object[] data = (Object[]) request.getData();
             String studentNumber = (String) data[0];
             String courseCode = (String) data[1];
@@ -206,14 +198,14 @@ public class Server {
             }
         }
 
-        private Response handleGetStudentEnrollments(Request request) {
+        private Response handleGetStudentEnrollments(za.ac.cput.studentenrollment.connection.Request request) {
             String studentNumber = (String) request.getData();
             EnrollmentDAO enrollmentDAO = new EnrollmentDAO();
             List<Course> enrollments = enrollmentDAO.getStudentEnrollments(studentNumber);
             return new Response(ResponseStatus.SUCCESS, enrollments);
         }
 
-        private Response handleAddStudent(Request request) {
+        private Response handleAddStudent(za.ac.cput.studentenrollment.connection.Request request) {
             Student student = (Student) request.getData();
             StudentDAO studentDAO = new StudentDAO();
             
@@ -225,7 +217,7 @@ public class Server {
             }
         }
 
-        private Response handleAddCourse(Request request) {
+        private Response handleAddCourse(za.ac.cput.studentenrollment.connection.Request request) {
             Course course = (Course) request.getData();
             CourseDAO courseDAO = new CourseDAO();
             
@@ -247,7 +239,7 @@ public class Server {
             return new Response(ResponseStatus.SUCCESS, students);
         }
 
-        private Response handleGetCourseEnrollments(Request request) {
+        private Response handleGetCourseEnrollments(za.ac.cput.studentenrollment.connection.Request request) {
             String courseCode = (String) request.getData();
             EnrollmentDAO enrollmentDAO = new EnrollmentDAO();
             List<Student> students = enrollmentDAO.getCourseEnrollments(courseCode);

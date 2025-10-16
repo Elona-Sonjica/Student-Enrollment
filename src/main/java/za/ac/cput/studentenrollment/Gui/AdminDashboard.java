@@ -1,278 +1,285 @@
 package za.ac.cput.studentenrollment.Gui;
 
-import za.ac.cput.studentenrollment.modelclasses.Student;
-import za.ac.cput.studentenrollment.modelclasses.Course;
-import za.ac.cput.studentenrollment.connection.ClientCommunicator;
-import za.ac.cput.studentenrollment.connection.Request;
-import za.ac.cput.studentenrollment.connection.RequestType;
-import za.ac.cput.studentenrollment.connection.Response;
-import za.ac.cput.studentenrollment.connection.ResponseStatus;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+import za.ac.cput.studentenrollment.connection.ClientCommunicator;
+import za.ac.cput.studentenrollment.connection.RequestType;
+import za.ac.cput.studentenrollment.connection.Response;
+import za.ac.cput.studentenrollment.modelclasses.Course;
+import za.ac.cput.studentenrollment.modelclasses.Student;
 
 public class AdminDashboard extends JFrame {
-    private Student currentAdmin;
     private ClientCommunicator client;
-    private JTabbedPane tabbedPane;
     private JTable studentsTable;
     private JTable coursesTable;
     private DefaultTableModel studentsModel;
     private DefaultTableModel coursesModel;
 
-    public AdminDashboard(JPanel admin, CardLayout cardLayout, ClientCommunicator communicator) {
-        this.currentAdmin = admin;
-        this.client = new ClientCommunicator();
-        
-        if (!client.connect()) {
-            JOptionPane.showMessageDialog(this, "Cannot connect to server", "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
-        
+    public AdminDashboard(ClientCommunicator client) {
+        this.client = client;
         initializeUI();
-        loadData();
-    }
-
-    public AdminDashboard(Student student) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        loadStudents();
+        loadCourses();
     }
 
     private void initializeUI() {
-        setTitle("Admin Dashboard - CPUT");
+        setTitle("Admin Portal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 700);
+        setSize(900, 700);
         setLocationRelativeTo(null);
 
-        // Main container
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        mainPanel.setBackground(new Color(240, 240, 240));
+        // Menu bar
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+        JMenuItem logoutMenuItem = new JMenuItem("Logout");
+        logoutMenuItem.addActionListener(e -> logout());
+        fileMenu.add(logoutMenuItem);
+        menuBar.add(fileMenu);
+        setJMenuBar(menuBar);
 
-        // Header
-        JPanel headerPanel = createHeaderPanel();
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
+        // Main panel with tabs
+        JTabbedPane tabbedPane = new JTabbedPane();
 
-        // Content area with tabs
-        tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        
-        // Students tab
-        JPanel studentsPanel = createStudentsPanel();
-        tabbedPane.addTab("Students", studentsPanel);
-        
-        // Courses tab
-        JPanel coursesPanel = createCoursesPanel();
-        tabbedPane.addTab("Courses", coursesPanel);
-        
-        // Enrollments tab
-        JPanel enrollmentsPanel = createEnrollmentsPanel();
-        tabbedPane.addTab("Enrollments", enrollmentsPanel);
+        // Students Management Tab
+        tabbedPane.addTab("Manage Students", createStudentsPanel());
 
-        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+        // Courses Management Tab
+        tabbedPane.addTab("Manage Courses", createCoursesPanel());
 
-        add(mainPanel);
-    }
+        // Enrollment Management Tab
+        tabbedPane.addTab("View Enrollments", createEnrollmentsPanel());
 
-    private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(52, 73, 94));
-        headerPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
-
-        JLabel titleLabel = new JLabel("Administrator Dashboard");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        titleLabel.setForeground(Color.WHITE);
-
-        JLabel userLabel = new JLabel("Logged in as: " + currentAdmin.getName());
-        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        userLabel.setForeground(Color.LIGHT_GRAY);
-
-        JButton logoutButton = new JButton("Logout");
-        logoutButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        logoutButton.setBackground(new Color(231, 76, 60));
-        logoutButton.setForeground(Color.WHITE);
-        logoutButton.setFocusPainted(false);
-        logoutButton.addActionListener(e -> logout());
-
-        JPanel infoPanel = new JPanel(new BorderLayout());
-        infoPanel.setOpaque(false);
-        infoPanel.add(titleLabel, BorderLayout.NORTH);
-        infoPanel.add(userLabel, BorderLayout.SOUTH);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setOpaque(false);
-        buttonPanel.add(logoutButton);
-
-        headerPanel.add(infoPanel, BorderLayout.WEST);
-        headerPanel.add(buttonPanel, BorderLayout.EAST);
-
-        return headerPanel;
+        add(tabbedPane);
+        setVisible(true);
     }
 
     private JPanel createStudentsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout());
 
-        // Table
-        String[] columns = {"Student Number", "Name", "Surname", "Email"};
-        studentsModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        studentsTable = new JTable(studentsModel);
-        studentsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JScrollPane scrollPane = new JScrollPane(studentsTable);
-
-        // Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // Toolbar
+        JToolBar toolBar = new JToolBar();
         JButton addStudentButton = new JButton("Add Student");
         JButton refreshButton = new JButton("Refresh");
         
-        styleButton(addStudentButton, new Color(46, 204, 113));
-        styleButton(refreshButton, new Color(52, 152, 219));
-        
-        addStudentButton.addActionListener(e -> addStudent());
-        refreshButton.addActionListener(e -> loadStudents());
-        
-        buttonPanel.add(addStudentButton);
-        buttonPanel.add(refreshButton);
+        toolBar.add(addStudentButton);
+        toolBar.add(refreshButton);
+        panel.add(toolBar, BorderLayout.NORTH);
 
-        panel.add(new JLabel("Student Management"), BorderLayout.NORTH);
+        // Students table
+        String[] columns = {"Student Number", "Name", "Surname", "Email"};
+        studentsModel = new DefaultTableModel(columns, 0);
+        studentsTable = new JTable(studentsModel);
+        JScrollPane scrollPane = new JScrollPane(studentsTable);
         panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add action listeners
+        addStudentButton.addActionListener(e -> showAddStudentDialog());
+        refreshButton.addActionListener(e -> loadStudents());
 
         return panel;
     }
 
     private JPanel createCoursesPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout());
 
-        // Table
-        String[] columns = {"Course Code", "Title", "Instructor"};
-        coursesModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        coursesTable = new JTable(coursesModel);
-        coursesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JScrollPane scrollPane = new JScrollPane(coursesTable);
-
-        // Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // Toolbar
+        JToolBar toolBar = new JToolBar();
         JButton addCourseButton = new JButton("Add Course");
         JButton refreshButton = new JButton("Refresh");
         
-        styleButton(addCourseButton, new Color(46, 204, 113));
-        styleButton(refreshButton, new Color(52, 152, 219));
-        
-        addCourseButton.addActionListener(e -> addCourse());
-        refreshButton.addActionListener(e -> loadCourses());
-        
-        buttonPanel.add(addCourseButton);
-        buttonPanel.add(refreshButton);
+        toolBar.add(addCourseButton);
+        toolBar.add(refreshButton);
+        panel.add(toolBar, BorderLayout.NORTH);
 
-        panel.add(new JLabel("Course Management"), BorderLayout.NORTH);
+        // Courses table
+        String[] columns = {"Course Code", "Title", "Instructor"};
+        coursesModel = new DefaultTableModel(columns, 0);
+        coursesTable = new JTable(coursesModel);
+        JScrollPane scrollPane = new JScrollPane(coursesTable);
         panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add action listeners
+        addCourseButton.addActionListener(e -> showAddCourseDialog());
+        refreshButton.addActionListener(e -> loadCourses());
 
         return panel;
     }
 
     private JPanel createEnrollmentsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        // Course selection
+        JPanel topPanel = new JPanel(new FlowLayout());
+        JLabel courseLabel = new JLabel("Select Course:");
+        JComboBox<String> courseComboBox = new JComboBox<>();
+        JButton viewEnrollmentsButton = new JButton("View Enrollments");
+        
+        topPanel.add(courseLabel);
+        topPanel.add(courseComboBox);
+        topPanel.add(viewEnrollmentsButton);
+        panel.add(topPanel, BorderLayout.NORTH);
 
-        JLabel infoLabel = new JLabel("Select a course from the Courses tab to view enrollments");
-        infoLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        infoLabel.setFont(new Font("Segoe UI", Font.ITALIC, 14));
-        infoLabel.setForeground(Color.GRAY);
+        // Enrollments table
+        String[] columns = {"Student Number", "Name", "Surname", "Email"};
+        DefaultTableModel enrollmentsModel = new DefaultTableModel(columns, 0);
+        JTable enrollmentsTable = new JTable(enrollmentsModel);
+        JScrollPane scrollPane = new JScrollPane(enrollmentsTable);
+        panel.add(scrollPane, BorderLayout.CENTER);
 
-        panel.add(infoLabel, BorderLayout.CENTER);
+        // Load courses into combo box
+        loadCoursesIntoComboBox(courseComboBox);
+
+        // Add action listener
+        viewEnrollmentsButton.addActionListener(e -> {
+            if (courseComboBox.getSelectedIndex() != -1) {
+                String selected = courseComboBox.getSelectedItem().toString();
+                String courseCode = selected.split(" - ")[0];
+                loadCourseEnrollments(courseCode, enrollmentsModel);
+            }
+        });
+
         return panel;
     }
 
-    private void styleButton(JButton button, Color color) {
-        button.setBackground(color);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-    }
-
-    private void loadData() {
-        loadStudents();
-        loadCourses();
-    }
-
     private void loadStudents() {
-        Request request = new Request(RequestType.GET_ALL_STUDENTS);
-        Response response = client.sendRequest((com.sun.net.httpserver.Request) request);
-        
-        if (response.isSuccess()) {
-            List<Student> students = (List<Student>) response.getData();
-            studentsModel.setRowCount(0);
-            for (Student student : students) {
-                studentsModel.addRow(new Object[]{
-                    student.getStudentNumber(),
-                    student.getName(),
-                    student.getSurname(),
-                    student.getEmail()
-                });
+        try {
+            // Use fully qualified name for Request
+            za.ac.cput.studentenrollment.connection.Request request = 
+                new za.ac.cput.studentenrollment.connection.Request(RequestType.GET_ALL_STUDENTS);
+            Response response = client.sendRequest(request);
+            
+            if (response.isSuccess()) {
+                List<Student> students = (List<Student>) response.getData();
+                studentsModel.setRowCount(0);
+                
+                for (Student student : students) {
+                    studentsModel.addRow(new Object[]{
+                        student.getStudentNumber(),
+                        student.getName(),
+                        student.getSurname(),
+                        student.getEmail()
+                    });
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error loading students: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to load students: " + response.getMessage(), 
-                "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void loadCourses() {
-        Request request = new Request(RequestType.GET_ALL_COURSES);
-        Response response = client.sendRequest((com.sun.net.httpserver.Request) request);
-        
-        if (response.isSuccess()) {
-            List<Course> courses = (List<Course>) response.getData();
-            coursesModel.setRowCount(0);
-            for (Course course : courses) {
-                coursesModel.addRow(new Object[]{
-                    course.getCourseCode(),
-                    course.getTitle(),
-                    course.getInstructor()
-                });
+        try {
+            // Use fully qualified name for Request
+            za.ac.cput.studentenrollment.connection.Request request = 
+                new za.ac.cput.studentenrollment.connection.Request(RequestType.GET_ALL_COURSES);
+            Response response = client.sendRequest(request);
+            
+            if (response.isSuccess()) {
+                List<Course> courses = (List<Course>) response.getData();
+                coursesModel.setRowCount(0);
+                
+                for (Course course : courses) {
+                    coursesModel.addRow(new Object[]{
+                        course.getCourseCode(),
+                        course.getTitle(),
+                        course.getInstructor()
+                    });
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error loading courses: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to load courses: " + response.getMessage(), 
-                "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void addStudent() {
-        // Create dialog for adding student
+    private void loadCoursesIntoComboBox(JComboBox<String> comboBox) {
+        try {
+            // Use fully qualified name for Request
+            za.ac.cput.studentenrollment.connection.Request request = 
+                new za.ac.cput.studentenrollment.connection.Request(RequestType.GET_ALL_COURSES);
+            Response response = client.sendRequest(request);
+            
+            if (response.isSuccess()) {
+                List<Course> courses = (List<Course>) response.getData();
+                comboBox.removeAllItems();
+                
+                for (Course course : courses) {
+                    comboBox.addItem(course.getCourseCode() + " - " + course.getTitle());
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading courses: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void loadCourseEnrollments(String courseCode, DefaultTableModel model) {
+        try {
+            // Use fully qualified name for Request
+            za.ac.cput.studentenrollment.connection.Request request = 
+                new za.ac.cput.studentenrollment.connection.Request(RequestType.GET_COURSE_ENROLLMENTS, courseCode);
+            Response response = client.sendRequest(request);
+            
+            if (response.isSuccess()) {
+                List<Student> students = (List<Student>) response.getData();
+                model.setRowCount(0);
+                
+                for (Student student : students) {
+                    model.addRow(new Object[]{
+                        student.getStudentNumber(),
+                        student.getName(),
+                        student.getSurname(),
+                        student.getEmail()
+                    });
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error loading enrollments: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void showAddStudentDialog() {
+        JDialog dialog = new JDialog(this, "Add New Student", true);
+        dialog.setLayout(new GridLayout(5, 2, 10, 10));
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+
         JTextField numberField = new JTextField();
         JTextField nameField = new JTextField();
         JTextField surnameField = new JTextField();
         JTextField emailField = new JTextField();
         JPasswordField passwordField = new JPasswordField();
 
-        Object[] message = {
-            "Student Number:", numberField,
-            "Name:", nameField,
-            "Surname:", surnameField,
-            "Email:", emailField,
-            "Password:", passwordField
-        };
+        dialog.add(new JLabel("Student Number:"));
+        dialog.add(numberField);
+        dialog.add(new JLabel("Name:"));
+        dialog.add(nameField);
+        dialog.add(new JLabel("Surname:"));
+        dialog.add(surnameField);
+        dialog.add(new JLabel("Email:"));
+        dialog.add(emailField);
+        dialog.add(new JLabel("Password:"));
+        dialog.add(passwordField);
 
-        int option = JOptionPane.showConfirmDialog(this, message, "Add Student", 
-            JOptionPane.OK_CANCEL_OPTION);
-        
-        if (option == JOptionPane.OK_OPTION) {
+        JButton saveButton = new JButton("Save");
+        JButton cancelButton = new JButton("Cancel");
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+
+        dialog.add(new JLabel()); // empty cell
+        dialog.add(buttonPanel);
+
+        saveButton.addActionListener(e -> {
             String number = numberField.getText().trim();
             String name = nameField.getText().trim();
             String surname = surnameField.getText().trim();
@@ -280,72 +287,107 @@ public class AdminDashboard extends JFrame {
             String password = new String(passwordField.getPassword());
 
             if (number.isEmpty() || name.isEmpty() || surname.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in all fields", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            Student newStudent = new Student(number, name, surname, email, password);
-            Request request = new Request(RequestType.ADD_STUDENT, newStudent);
-            Response response = client.sendRequest((com.sun.net.httpserver.Request) request);
-            
-            if (response.isSuccess()) {
-                JOptionPane.showMessageDialog(this, "Student added successfully");
-                loadStudents();
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed to add student: " + response.getMessage(), 
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            try {
+                Student student = new Student(number, name, surname, email, password);
+                // Use fully qualified name for Request
+                za.ac.cput.studentenrollment.connection.Request request = 
+                    new za.ac.cput.studentenrollment.connection.Request(RequestType.ADD_STUDENT, student);
+                Response response = client.sendRequest(request);
+
+                if (response.isSuccess()) {
+                    JOptionPane.showMessageDialog(dialog, "Student added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+                    loadStudents();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Failed to add student: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        }
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        dialog.setVisible(true);
     }
 
-    private void addCourse() {
-        // Create dialog for adding course
+    private void showAddCourseDialog() {
+        JDialog dialog = new JDialog(this, "Add New Course", true);
+        dialog.setLayout(new GridLayout(4, 2, 10, 10));
+        dialog.setSize(400, 200);
+        dialog.setLocationRelativeTo(this);
+
         JTextField codeField = new JTextField();
         JTextField titleField = new JTextField();
         JTextField instructorField = new JTextField();
 
-        Object[] message = {
-            "Course Code:", codeField,
-            "Title:", titleField,
-            "Instructor:", instructorField
-        };
+        dialog.add(new JLabel("Course Code:"));
+        dialog.add(codeField);
+        dialog.add(new JLabel("Title:"));
+        dialog.add(titleField);
+        dialog.add(new JLabel("Instructor:"));
+        dialog.add(instructorField);
 
-        int option = JOptionPane.showConfirmDialog(this, message, "Add Course", 
-            JOptionPane.OK_CANCEL_OPTION);
-        
-        if (option == JOptionPane.OK_OPTION) {
+        JButton saveButton = new JButton("Save");
+        JButton cancelButton = new JButton("Cancel");
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+
+        dialog.add(new JLabel()); // empty cell
+        dialog.add(buttonPanel);
+
+        saveButton.addActionListener(e -> {
             String code = codeField.getText().trim();
             String title = titleField.getText().trim();
             String instructor = instructorField.getText().trim();
 
             if (code.isEmpty() || title.isEmpty() || instructor.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in all fields", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            Course newCourse = new Course(code, title, instructor);
-            Request request = new Request(RequestType.ADD_COURSE, newCourse);
-            Response response = client.sendRequest((com.sun.net.httpserver.Request) request);
-            
-            if (response.isSuccess()) {
-                JOptionPane.showMessageDialog(this, "Course added successfully");
-                loadCourses();
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed to add course: " + response.getMessage(), 
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            try {
+                Course course = new Course(code, title, instructor);
+                // Use fully qualified name for Request
+                za.ac.cput.studentenrollment.connection.Request request = 
+                    new za.ac.cput.studentenrollment.connection.Request(RequestType.ADD_COURSE, course);
+                Response response = client.sendRequest(request);
+
+                if (response.isSuccess()) {
+                    JOptionPane.showMessageDialog(dialog, "Course added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+                    loadCourses();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Failed to add course: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        }
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        dialog.setVisible(true);
     }
 
     private void logout() {
-        client.disconnect();
-        new LoginScreen().setVisible(true);
-        dispose();
-    }
-
-    public static void main(String[] args) {
-        // For testing only
-        Student testAdmin = new Student("admin", "Admin", "User", "admin@cput.ac.za", "");
-        SwingUtilities.invokeLater(() -> new AdminPanel(testAdmin, cardLayout, communicator).setVisible(true));
+        try {
+            // Use fully qualified name for Request
+            za.ac.cput.studentenrollment.connection.Request request = 
+                new za.ac.cput.studentenrollment.connection.Request(RequestType.LOGOUT);
+            client.sendRequest(request);
+        } catch (Exception e) {
+            // Ignore errors during logout
+        } finally {
+            client.disconnect();
+            new LoginGUI();
+            dispose();
+        }
     }
 }

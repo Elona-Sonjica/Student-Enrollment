@@ -4,8 +4,6 @@
  */
 package za.ac.cput.studentenrollment.connection;
 
-import com.sun.net.httpserver.Request;
-
 /**
  *
  * @author elzas
