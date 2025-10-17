@@ -5,16 +5,22 @@
 package za.ac.cput.studentenrollment.modelclasses;
 
 import java.io.Serializable;
+/**
+ *
+ * @author elzas
+ */
 
 public class Student implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private String studentNumber;
     private String name;
     private String surname;
     private String email;
     private String password;
-    
+
     public Student() {}
-    
+
     public Student(String studentNumber, String name, String surname, String email, String password) {
         this.studentNumber = studentNumber;
         this.name = name;
@@ -22,8 +28,7 @@ public class Student implements Serializable {
         this.email = email;
         this.password = password;
     }
-    
-    // Getters and Setters
+
     public String getStudentNumber() { return studentNumber; }
     public void setStudentNumber(String studentNumber) { this.studentNumber = studentNumber; }
     
@@ -41,6 +46,19 @@ public class Student implements Serializable {
     
     @Override
     public String toString() {
-        return name + " " + surname + " (" + studentNumber + ")";
+        return studentNumber + " - " + name + " " + surname;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Student student = (Student) obj;
+        return studentNumber.equals(student.studentNumber);
+    }
+    
+    @Override
+    public int hashCode() {
+        return studentNumber.hashCode();
     }
 }

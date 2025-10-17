@@ -4,6 +4,10 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+/**
+ * Enhanced User class for future extensibility
+ * Currently not used in the main application but available for future features
+ */
 public class User implements Serializable {
     private static final long serialVersionUID = 1L;
 

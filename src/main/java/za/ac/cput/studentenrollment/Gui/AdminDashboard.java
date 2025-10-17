@@ -1,627 +1,578 @@
-package za.ac.cput.studentenrollment.ui;
+package za.ac.cput.studentenrollment.Gui;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
+import za.ac.cput.studentenrollment.connection.ClientCommunicator;
+import za.ac.cput.studentenrollment.connection.Request;
+import za.ac.cput.studentenrollment.connection.RequestType;
+import za.ac.cput.studentenrollment.connection.Response;
 import za.ac.cput.studentenrollment.modelclasses.Course;
 import za.ac.cput.studentenrollment.modelclasses.Student;
+import za.ac.cput.studentenrollment.util.RoundedImageUtil;
 
-public class AdminDashboard extends JPanel {
-    private JPanel cardPanel;
-    private CardLayout cardLayout;
-    private ClientCommunicator communicator;
-
-    private final Color PRIMARY_COLOR = new Color(41, 128, 185);
-    private final Color SECONDARY_COLOR = new Color(236, 240, 241);
-    private final Color ACCENT_COLOR = new Color(52, 152, 219);
-    private final Color SUCCESS_COLOR = new Color(46, 204, 113);
-    private final Color WARNING_COLOR = new Color(230, 126, 34);
-    private final Color DANGER_COLOR = new Color(231, 76, 60);
-
-    private JLabel lblWelcome;
-    private JTabbedPane tabbedPane;
-    private JProgressBar progressBar;
-    private JLabel lblStatus;
-
-    private DefaultTableModel studentsModel;
-    private DefaultTableModel coursesModel;
-    private DefaultTableModel enrollmentsModel;
-
+public class AdminDashboard extends JFrame {
+    private ClientCommunicator client;
     private JTable studentsTable;
     private JTable coursesTable;
-    private JTable enrollmentsTable;
+    private DefaultTableModel studentsModel;
+    private DefaultTableModel coursesModel;
 
-    private JButton btnLogout;
-    private JButton btnRefresh;
-    private JButton btnAddStudent;
-    private JButton btnAddCourse;
-    private JButton btnDeleteStudent;
-    private JButton btnDeleteCourse;
-    private JButton btnViewEnrollments;
-
-    public AdminDashboard(JPanel cardPanel, CardLayout cardLayout, ClientCommunicator communicator) {
-        this.cardPanel = cardPanel;
-        this.cardLayout = cardLayout;
-        this.communicator = communicator;
-        initializeComponents();
-        setupModernGUI();
-        loadInitialData();
+    public AdminDashboard(ClientCommunicator client) {
+        this.client = client;
+        initializeUI();
+        loadStudents();
+        loadCourses();
     }
 
-    private void initializeComponents() {
-        lblWelcome = new JLabel("⚙️ Administrator Dashboard");
-        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblWelcome.setForeground(PRIMARY_COLOR);
+    private void initializeUI() {
+        setTitle("Admin Portal - Student Enrollment System");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(900, 700);
+        setLocationRelativeTo(null);
 
-        progressBar = new JProgressBar();
-        progressBar.setVisible(false);
-        progressBar.setIndeterminate(true);
+        // Menu bar
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+        JMenuItem logoutMenuItem = new JMenuItem("Logout");
+        logoutMenuItem.addActionListener(e -> logout());
+        fileMenu.add(logoutMenuItem);
+        menuBar.add(fileMenu);
+        setJMenuBar(menuBar);
 
-        lblStatus = new JLabel("Ready");
-        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblStatus.setForeground(Color.DARK_GRAY);
+        // Main panel with header and tabs
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        // Add header
+        mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
 
-        initializeTables();
-        initializeButtons();
-    }
+        // Main panel with tabs
+        JTabbedPane tabbedPane = new JTabbedPane();
 
-    private void initializeTables() {
-        String[] studentColumns = {"Student Number", "Name", "Surname", "Email", "Actions"};
-        studentsModel = new DefaultTableModel(studentColumns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 4;
-            }
-        };
+        // Students Management Tab
+        tabbedPane.addTab("Manage Students", createStudentsPanel());
 
-        String[] courseColumns = {"Course Code", "Course Name", "Instructor", "Enrolled", "Actions"};
-        coursesModel = new DefaultTableModel(courseColumns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 4;
-            }
-        };
+        // Courses Management Tab
+        tabbedPane.addTab("Manage Courses", createCoursesPanel());
 
-        String[] enrollmentColumns = {"Student", "Course", "Enrollment Date", "Actions"};
-        enrollmentsModel = new DefaultTableModel(enrollmentColumns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 3;
-            }
-        };
+        // Enrollment Management Tab
+        tabbedPane.addTab("View Enrollments", createEnrollmentsPanel());
 
-        studentsTable = createStyledTable(studentsModel);
-        coursesTable = createStyledTable(coursesModel);
-        enrollmentsTable = createStyledTable(enrollmentsModel);
-    }
-
-    private JTable createStyledTable(DefaultTableModel model) {
-        JTable table = new JTable(model);
-        table.setRowHeight(35);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-        table.setShowGrid(true);
-        table.setGridColor(new Color(240, 240, 240));
-        return table;
-    }
-
-    private void initializeButtons() {
-        btnLogout = createModernButton("🚪 Logout", DANGER_COLOR);
-        btnRefresh = createModernButton("🔄 Refresh", ACCENT_COLOR);
-        btnAddStudent = createModernButton("➕ Add Student", SUCCESS_COLOR);
-        btnAddCourse = createModernButton("➕ Add Course", SUCCESS_COLOR);
-        btnDeleteStudent = createModernButton("🗑️ Delete Student", DANGER_COLOR);
-        btnDeleteCourse = createModernButton("🗑️ Delete Course", DANGER_COLOR);
-        btnViewEnrollments = createModernButton("📊 View Enrollments", WARNING_COLOR);
-
-        btnLogout.addActionListener(e -> logout());
-        btnRefresh.addActionListener(e -> refreshData());
-        btnAddStudent.addActionListener(e -> showAddStudentDialog());
-        btnAddCourse.addActionListener(e -> showAddCourseDialog());
-        btnDeleteStudent.addActionListener(e -> deleteSelectedStudent());
-        btnDeleteCourse.addActionListener(e -> deleteSelectedCourse());
-        btnViewEnrollments.addActionListener(e -> viewCourseEnrollments());
-    }
-
-    private JButton createModernButton(String text, Color color) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        button.setBackground(color);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(color.darker());
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(color);
-            }
-        });
-
-        return button;
-    }
-
-    private void setupModernGUI() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        setBackground(SECONDARY_COLOR);
-
-        add(createHeaderPanel(), BorderLayout.NORTH);
-        add(createMainPanel(), BorderLayout.CENTER);
-        add(createStatusPanel(), BorderLayout.SOUTH);
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+        
+        add(mainPanel);
+        setVisible(true);
     }
 
     private JPanel createHeaderPanel() {
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(Color.WHITE);
-        headerPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
-                BorderFactory.createEmptyBorder(10, 15, 10, 15)
-        ));
-
-        JPanel welcomePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        welcomePanel.setBackground(Color.WHITE);
-        welcomePanel.add(lblWelcome);
-
-        JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        controlsPanel.setBackground(Color.WHITE);
-        controlsPanel.add(btnRefresh);
-        controlsPanel.add(btnLogout);
-
-        headerPanel.add(welcomePanel, BorderLayout.WEST);
-        headerPanel.add(controlsPanel, BorderLayout.EAST);
-
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        headerPanel.setBackground(new Color(240, 240, 240));
+        
+        // Logo on the left
+        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        logoPanel.setBackground(new Color(240, 240, 240));
+        JLabel logoLabel = new JLabel();
+        ImageIcon smallLogo = RoundedImageUtil.createRoundedImageIcon("/images/cput-logo-1.jpg", 50);
+        if (smallLogo != null) {
+            logoLabel.setIcon(smallLogo);
+        } else {
+            // Fallback if image not found
+            logoLabel.setText("CPUT");
+            logoLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            logoLabel.setForeground(Color.BLUE);
+        }
+        logoPanel.add(logoLabel);
+        
+        // Title in the center
+        JLabel titleLabel = new JLabel("Admin Portal - Student Enrollment System", JLabel.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setForeground(new Color(0, 51, 102)); // Dark blue color
+        
+        headerPanel.add(logoPanel, BorderLayout.WEST);
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        
         return headerPanel;
-    }
-
-    private JPanel createMainPanel() {
-        tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 14));
-
-        tabbedPane.addTab("👥 Students Management", createStudentsPanel());
-        tabbedPane.addTab("📚 Courses Management", createCoursesPanel());
-        tabbedPane.addTab("📊 Enrollment Reports", createEnrollmentsPanel());
-
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(tabbedPane, BorderLayout.CENTER);
-        return mainPanel;
     }
 
     private JPanel createStudentsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.add(btnAddStudent);
-        buttonPanel.add(btnDeleteStudent);
+        // Toolbar
+        JToolBar toolBar = new JToolBar();
+        toolBar.setFloatable(false);
+        JButton addStudentButton = new JButton("Add New Student");
+        JButton refreshButton = new JButton("Refresh List");
+        
+        // Style buttons
+        addStudentButton.setBackground(new Color(0, 102, 204));
+        addStudentButton.setForeground(Color.WHITE);
+        refreshButton.setBackground(new Color(102, 102, 102));
+        refreshButton.setForeground(Color.WHITE);
+        
+        toolBar.add(addStudentButton);
+        toolBar.add(Box.createHorizontalStrut(10));
+        toolBar.add(refreshButton);
+        panel.add(toolBar, BorderLayout.NORTH);
 
+        // Students table
+        String[] columns = {"Student Number", "Name", "Surname", "Email"};
+        studentsModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table non-editable
+            }
+        };
+        studentsTable = new JTable(studentsModel);
+        studentsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        studentsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        studentsTable.setRowHeight(25);
+        
         JScrollPane scrollPane = new JScrollPane(studentsTable);
-        scrollPane.setPreferredSize(new Dimension(800, 400));
-
-        panel.add(buttonPanel, BorderLayout.NORTH);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Registered Students"));
         panel.add(scrollPane, BorderLayout.CENTER);
+
+        // Status label
+        JLabel statusLabel = new JLabel("No students registered. Click 'Add New Student' to register students.");
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        panel.add(statusLabel, BorderLayout.SOUTH);
+
+        // Add action listeners
+        addStudentButton.addActionListener(e -> showAddStudentDialog());
+        refreshButton.addActionListener(e -> loadStudents());
 
         return panel;
     }
 
     private JPanel createCoursesPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.add(btnAddCourse);
-        buttonPanel.add(btnDeleteCourse);
-        buttonPanel.add(btnViewEnrollments);
+        // Toolbar
+        JToolBar toolBar = new JToolBar();
+        toolBar.setFloatable(false);
+        JButton addCourseButton = new JButton("Add New Course");
+        JButton refreshButton = new JButton("Refresh List");
+        
+        // Style buttons
+        addCourseButton.setBackground(new Color(0, 102, 204));
+        addCourseButton.setForeground(Color.WHITE);
+        refreshButton.setBackground(new Color(102, 102, 102));
+        refreshButton.setForeground(Color.WHITE);
+        
+        toolBar.add(addCourseButton);
+        toolBar.add(Box.createHorizontalStrut(10));
+        toolBar.add(refreshButton);
+        panel.add(toolBar, BorderLayout.NORTH);
 
+        // Courses table
+        String[] columns = {"Course Code", "Title", "Instructor"};
+        coursesModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table non-editable
+            }
+        };
+        coursesTable = new JTable(coursesModel);
+        coursesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        coursesTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        coursesTable.setRowHeight(25);
+        
         JScrollPane scrollPane = new JScrollPane(coursesTable);
-        scrollPane.setPreferredSize(new Dimension(800, 400));
-
-        panel.add(buttonPanel, BorderLayout.NORTH);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Available Courses"));
         panel.add(scrollPane, BorderLayout.CENTER);
+
+        // Status label
+        JLabel statusLabel = new JLabel("No courses available. Click 'Add New Course' to create courses.");
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        panel.add(statusLabel, BorderLayout.SOUTH);
+
+        // Add action listeners
+        addCourseButton.addActionListener(e -> showAddCourseDialog());
+        refreshButton.addActionListener(e -> loadCourses());
 
         return panel;
     }
 
     private JPanel createEnrollmentsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Course selection panel
+        JPanel topPanel = new JPanel(new FlowLayout());
+        topPanel.setBorder(BorderFactory.createTitledBorder("Course Selection"));
+        JLabel courseLabel = new JLabel("Select Course:");
+        courseLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        
+        JComboBox<String> courseComboBox = new JComboBox<>();
+        courseComboBox.setPreferredSize(new Dimension(300, 25));
+        
+        JButton viewEnrollmentsButton = new JButton("View Enrollments");
+        JButton refreshButton = new JButton("Refresh Courses");
+        
+        // Style buttons
+        viewEnrollmentsButton.setBackground(new Color(0, 102, 204));
+        viewEnrollmentsButton.setForeground(Color.WHITE);
+        refreshButton.setBackground(new Color(102, 102, 102));
+        refreshButton.setForeground(Color.WHITE);
+        
+        topPanel.add(courseLabel);
+        topPanel.add(courseComboBox);
+        topPanel.add(Box.createHorizontalStrut(10));
+        topPanel.add(viewEnrollmentsButton);
+        topPanel.add(Box.createHorizontalStrut(5));
+        topPanel.add(refreshButton);
+        panel.add(topPanel, BorderLayout.NORTH);
 
-        JPanel statsPanel = new JPanel(new GridLayout(1, 3, 10, 0));
-        statsPanel.setBackground(Color.WHITE);
-        statsPanel.add(createStatCard("Total Students", "👥", "0", PRIMARY_COLOR));
-        statsPanel.add(createStatCard("Total Courses", "📚", "0", SUCCESS_COLOR));
-        statsPanel.add(createStatCard("Total Enrollments", "📊", "0", WARNING_COLOR));
-
-        JScrollPane scrollPane = new JScrollPane(enrollmentsTable);
-        scrollPane.setPreferredSize(new Dimension(800, 300));
-
-        panel.add(statsPanel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private JPanel createStatCard(String title, String icon, String value, Color color) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                BorderFactory.createEmptyBorder(15, 15, 15, 15)
-        ));
-
-        JLabel titleLabel = new JLabel(icon + " " + title);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        titleLabel.setForeground(Color.DARK_GRAY);
-
-        JLabel valueLabel = new JLabel(value, JLabel.CENTER);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        valueLabel.setForeground(color);
-
-        card.add(titleLabel, BorderLayout.NORTH);
-        card.add(valueLabel, BorderLayout.CENTER);
-
-        return card;
-    }
-
-    private JPanel createStatusPanel() {
-        JPanel statusPanel = new JPanel(new BorderLayout());
-        statusPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-        statusPanel.add(lblStatus, BorderLayout.WEST);
-        statusPanel.add(progressBar, BorderLayout.EAST);
-        return statusPanel;
-    }
-
-    private void loadInitialData() {
-        refreshData();
-    }
-
-    private void refreshData() {
-        setLoadingState(true, "🔄 Loading data...");
-
-        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+        // Enrollments table
+        String[] columns = {"Student Number", "Name", "Surname", "Email"};
+        DefaultTableModel enrollmentsModel = new DefaultTableModel(columns, 0) {
             @Override
-            protected Void doInBackground() throws Exception {
-                loadStudents();
-                loadCourses();
-                loadEnrollments();
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                setLoadingState(false, "✅ Data loaded successfully");
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table non-editable
             }
         };
-        worker.execute();
+        JTable enrollmentsTable = new JTable(enrollmentsModel);
+        enrollmentsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        enrollmentsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        enrollmentsTable.setRowHeight(25);
+        
+        JScrollPane scrollPane = new JScrollPane(enrollmentsTable);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Course Enrollments"));
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        // Status label
+        JLabel statusLabel = new JLabel("Select a course to view enrollments");
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        panel.add(statusLabel, BorderLayout.SOUTH);
+
+        // Load courses into combo box
+        loadCoursesIntoComboBox(courseComboBox);
+
+        // Add action listeners
+        viewEnrollmentsButton.addActionListener(e -> {
+            if (courseComboBox.getSelectedIndex() != -1 && !courseComboBox.getSelectedItem().toString().contains("No courses")) {
+                String selected = courseComboBox.getSelectedItem().toString();
+                String courseCode = selected.split(" - ")[0];
+                loadCourseEnrollments(courseCode, enrollmentsModel, statusLabel);
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a course first", "No Course Selected", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
+        refreshButton.addActionListener(e -> {
+            loadCoursesIntoComboBox(courseComboBox);
+            enrollmentsModel.setRowCount(0);
+            statusLabel.setText("Select a course to view enrollments");
+        });
+
+        return panel;
     }
 
     private void loadStudents() {
         try {
             Request request = new Request(RequestType.GET_ALL_STUDENTS);
-            Response response = communicator.sendRequest(request);
+            Response response = client.sendRequest(request);
+            
             if (response.isSuccess()) {
                 List<Student> students = (List<Student>) response.getData();
                 studentsModel.setRowCount(0);
-                for (Student student : students) {
-                    studentsModel.addRow(new Object[]{
+                
+                if (students.isEmpty()) {
+                    // Show message in table when no students
+                    studentsModel.setRowCount(1);
+                    studentsModel.setValueAt("No students registered. Add students using the 'Add New Student' button.", 0, 0);
+                } else {
+                    for (Student student : students) {
+                        studentsModel.addRow(new Object[]{
                             student.getStudentNumber(),
                             student.getName(),
                             student.getSurname(),
-                            student.getEmail(),
-                            "👁️ View"
-                    });
+                            student.getEmail()
+                        });
+                    }
                 }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error loading students: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
-            setStatus("❌ Error loading students: " + e.getMessage(), DANGER_COLOR);
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
     private void loadCourses() {
         try {
             Request request = new Request(RequestType.GET_ALL_COURSES);
-            Response response = communicator.sendRequest(request);
+            Response response = client.sendRequest(request);
+            
             if (response.isSuccess()) {
                 List<Course> courses = (List<Course>) response.getData();
                 coursesModel.setRowCount(0);
-                for (Course course : courses) {
-                    coursesModel.addRow(new Object[]{
+                
+                if (courses.isEmpty()) {
+                    // Show message in table when no courses
+                    coursesModel.setRowCount(1);
+                    coursesModel.setValueAt("No courses available. Add courses using the 'Add New Course' button.", 0, 0);
+                } else {
+                    for (Course course : courses) {
+                        coursesModel.addRow(new Object[]{
                             course.getCourseCode(),
                             course.getTitle(),
-                            course.getInstructor(),
-                            "0",
-                            "👁️ View"
-                    });
+                            course.getInstructor()
+                        });
+                    }
                 }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error loading courses: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
-            setStatus("❌ Error loading courses: " + e.getMessage(), DANGER_COLOR);
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
-    private void loadEnrollments() {
+    private void loadCoursesIntoComboBox(JComboBox<String> comboBox) {
         try {
-            enrollmentsModel.setRowCount(0);
-            enrollmentsModel.addRow(new Object[]{"John Doe", "ADP262S", "2024-01-15", "📝 Edit"});
-            enrollmentsModel.addRow(new Object[]{"Jane Smith", "ITS362S", "2024-01-16", "📝 Edit"});
+            Request request = new Request(RequestType.GET_ALL_COURSES);
+            Response response = client.sendRequest(request);
+            
+            if (response.isSuccess()) {
+                List<Course> courses = (List<Course>) response.getData();
+                comboBox.removeAllItems();
+                
+                if (courses.isEmpty()) {
+                    comboBox.addItem("No courses available - Add courses first");
+                } else {
+                    for (Course course : courses) {
+                        comboBox.addItem(course.getCourseCode() + " - " + course.getTitle());
+                    }
+                }
+            }
         } catch (Exception e) {
-            setStatus("❌ Error loading enrollments: " + e.getMessage(), DANGER_COLOR);
+            JOptionPane.showMessageDialog(this, "Error loading courses: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    private void loadCourseEnrollments(String courseCode, DefaultTableModel model, JLabel statusLabel) {
+        try {
+            Request request = new Request(RequestType.GET_COURSE_ENROLLMENTS, courseCode);
+            Response response = client.sendRequest(request);
+            
+            if (response.isSuccess()) {
+                List<Student> students = (List<Student>) response.getData();
+                model.setRowCount(0);
+                
+                if (students.isEmpty()) {
+                    statusLabel.setText("No students enrolled in " + courseCode);
+                } else {
+                    for (Student student : students) {
+                        model.addRow(new Object[]{
+                            student.getStudentNumber(),
+                            student.getName(),
+                            student.getSurname(),
+                            student.getEmail()
+                        });
+                    }
+                    statusLabel.setText(students.size() + " students enrolled in " + courseCode);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error loading enrollments: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
     private void showAddStudentDialog() {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Add New Student", true);
-        dialog.setLayout(new BorderLayout());
-        dialog.setSize(400, 400);
+        JDialog dialog = new JDialog(this, "Register New Student", true);
+        dialog.setLayout(new GridLayout(6, 2, 10, 10));
+        dialog.setSize(400, 300);
         dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(new Color(240, 240, 240));
 
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JTextField numberField = new JTextField();
+        JTextField nameField = new JTextField();
+        JTextField surnameField = new JTextField();
+        JTextField emailField = new JTextField();
+        JPasswordField passwordField = new JPasswordField();
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        // Create labels with bold font
+        JLabel numberLabel = new JLabel("Student Number*:");
+        JLabel nameLabel = new JLabel("Name*:");
+        JLabel surnameLabel = new JLabel("Surname*:");
+        JLabel emailLabel = new JLabel("Email*:");
+        JLabel passwordLabel = new JLabel("Password*:");
+        
+        Font boldFont = new Font("Arial", Font.BOLD, 12);
+        numberLabel.setFont(boldFont);
+        nameLabel.setFont(boldFont);
+        surnameLabel.setFont(boldFont);
+        emailLabel.setFont(boldFont);
+        passwordLabel.setFont(boldFont);
 
-        JTextField txtNumber = new JTextField(20);
-        JTextField txtName = new JTextField(20);
-        JTextField txtSurname = new JTextField(20);
-        JTextField txtEmail = new JTextField(20);
-        JPasswordField txtPassword = new JPasswordField(20);
+        dialog.add(numberLabel);
+        dialog.add(numberField);
+        dialog.add(nameLabel);
+        dialog.add(nameField);
+        dialog.add(surnameLabel);
+        dialog.add(surnameField);
+        dialog.add(emailLabel);
+        dialog.add(emailField);
+        dialog.add(passwordLabel);
+        dialog.add(passwordField);
 
-        gbc.gridx = 0; gbc.gridy = 0; formPanel.add(new JLabel("Student Number:"), gbc);
-        gbc.gridx = 1; formPanel.add(txtNumber, gbc);
-        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(new JLabel("Name:"), gbc);
-        gbc.gridx = 1; formPanel.add(txtName, gbc);
-        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(new JLabel("Surname:"), gbc);
-        gbc.gridx = 1; formPanel.add(txtSurname, gbc);
-        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(new JLabel("Email:"), gbc);
-        gbc.gridx = 1; formPanel.add(txtEmail, gbc);
-        gbc.gridx = 0; gbc.gridy = 4; formPanel.add(new JLabel("Password:"), gbc);
-        gbc.gridx = 1; formPanel.add(txtPassword, gbc);
+        JButton saveButton = new JButton("Register Student");
+        JButton cancelButton = new JButton("Cancel");
 
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton btnSave = createModernButton("💾 Save Student", SUCCESS_COLOR);
-        JButton btnCancel = createModernButton("❌ Cancel", DANGER_COLOR);
+        // Style buttons
+        saveButton.setBackground(new Color(0, 102, 204));
+        saveButton.setForeground(Color.WHITE);
+        cancelButton.setBackground(new Color(102, 102, 102));
+        cancelButton.setForeground(Color.WHITE);
 
-        btnSave.addActionListener(e -> {
-            if (validateStudentInput(txtNumber, txtName, txtSurname, txtEmail, txtPassword)) {
-                saveNewStudent(txtNumber.getText(), txtName.getText(), txtSurname.getText(),
-                        txtEmail.getText(), new String(txtPassword.getPassword()));
-                dialog.dispose();
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+
+        dialog.add(new JLabel("* Required fields"));
+        dialog.add(buttonPanel);
+
+        saveButton.addActionListener(e -> {
+            String number = numberField.getText().trim();
+            String name = nameField.getText().trim();
+            String surname = surnameField.getText().trim();
+            String email = emailField.getText().trim();
+            String password = new String(passwordField.getPassword());
+
+            if (number.isEmpty() || name.isEmpty() || surname.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try {
+                Student student = new Student(number, name, surname, email, password);
+                Request request = new Request(RequestType.ADD_STUDENT, student);
+                Response response = client.sendRequest(request);
+
+                if (response.isSuccess()) {
+                    JOptionPane.showMessageDialog(dialog, "Student registered successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+                    loadStudents();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Failed to register student: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
             }
         });
 
-        btnCancel.addActionListener(e -> dialog.dispose());
+        cancelButton.addActionListener(e -> dialog.dispose());
 
-        buttonPanel.add(btnSave);
-        buttonPanel.add(btnCancel);
-
-        dialog.add(formPanel, BorderLayout.CENTER);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
         dialog.setVisible(true);
     }
 
     private void showAddCourseDialog() {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Add New Course", true);
-        dialog.setLayout(new BorderLayout());
-        dialog.setSize(400, 300);
+        JDialog dialog = new JDialog(this, "Create New Course", true);
+        dialog.setLayout(new GridLayout(5, 2, 10, 10));
+        dialog.setSize(400, 250);
         dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(new Color(240, 240, 240));
 
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JTextField codeField = new JTextField();
+        JTextField titleField = new JTextField();
+        JTextField instructorField = new JTextField();
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        // Create labels with bold font
+        JLabel codeLabel = new JLabel("Course Code*:");
+        JLabel titleLabel = new JLabel("Course Title*:");
+        JLabel instructorLabel = new JLabel("Instructor*:");
+        
+        Font boldFont = new Font("Arial", Font.BOLD, 12);
+        codeLabel.setFont(boldFont);
+        titleLabel.setFont(boldFont);
+        instructorLabel.setFont(boldFont);
 
-        JTextField txtCode = new JTextField(20);
-        JTextField txtTitle = new JTextField(20);
-        JTextField txtInstructor = new JTextField(20);
+        dialog.add(codeLabel);
+        dialog.add(codeField);
+        dialog.add(titleLabel);
+        dialog.add(titleField);
+        dialog.add(instructorLabel);
+        dialog.add(instructorField);
 
-        gbc.gridx = 0; gbc.gridy = 0; formPanel.add(new JLabel("Course Code:"), gbc);
-        gbc.gridx = 1; formPanel.add(txtCode, gbc);
-        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(new JLabel("Course Title:"), gbc);
-        gbc.gridx = 1; formPanel.add(txtTitle, gbc);
-        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(new JLabel("Instructor:"), gbc);
-        gbc.gridx = 1; formPanel.add(txtInstructor, gbc);
+        JButton saveButton = new JButton("Create Course");
+        JButton cancelButton = new JButton("Cancel");
 
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton btnSave = createModernButton("💾 Save Course", SUCCESS_COLOR);
-        JButton btnCancel = createModernButton("❌ Cancel", DANGER_COLOR);
+        // Style buttons
+        saveButton.setBackground(new Color(0, 102, 204));
+        saveButton.setForeground(Color.WHITE);
+        cancelButton.setBackground(new Color(102, 102, 102));
+        cancelButton.setForeground(Color.WHITE);
 
-        btnSave.addActionListener(e -> {
-            if (validateCourseInput(txtCode, txtTitle, txtInstructor)) {
-                saveNewCourse(txtCode.getText(), txtTitle.getText(), txtInstructor.getText());
-                dialog.dispose();
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+
+        dialog.add(new JLabel("* Required fields"));
+        dialog.add(buttonPanel);
+        dialog.add(new JLabel("Format: XXX262S (e.g., ADP262S)"));
+
+        saveButton.addActionListener(e -> {
+            String code = codeField.getText().trim().toUpperCase();
+            String title = titleField.getText().trim();
+            String instructor = instructorField.getText().trim();
+
+            if (code.isEmpty() || title.isEmpty() || instructor.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try {
+                Course course = new Course(code, title, instructor);
+                Request request = new Request(RequestType.ADD_COURSE, course);
+                Response response = client.sendRequest(request);
+
+                if (response.isSuccess()) {
+                    JOptionPane.showMessageDialog(dialog, "Course created successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+                    loadCourses();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Failed to create course: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
             }
         });
 
-        btnCancel.addActionListener(e -> dialog.dispose());
+        cancelButton.addActionListener(e -> dialog.dispose());
 
-        buttonPanel.add(btnSave);
-        buttonPanel.add(btnCancel);
-
-        dialog.add(formPanel, BorderLayout.CENTER);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
         dialog.setVisible(true);
     }
 
-    private boolean validateStudentInput(JTextField number, JTextField name, JTextField surname,
-                                         JTextField email, JPasswordField password) {
-        if (number.getText().trim().isEmpty() || name.getText().trim().isEmpty() ||
-                surname.getText().trim().isEmpty() || email.getText().trim().isEmpty() ||
-                password.getPassword().length == 0) {
-            JOptionPane.showMessageDialog(this, "❌ Please fill in all fields", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-
-    private boolean validateCourseInput(JTextField code, JTextField title, JTextField instructor) {
-        if (code.getText().trim().isEmpty() || title.getText().trim().isEmpty() ||
-                instructor.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "❌ Please fill in all fields", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-
-    private void saveNewStudent(String number, String name, String surname, String email, String password) {
-        setLoadingState(true, "💾 Saving student...");
-
-        SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
-            @Override
-            protected Boolean doInBackground() throws Exception {
-                Student student = new Student(number, name, surname, email, password);
-                Request request = new Request(RequestType.ADD_STUDENT, student);
-                Response response = communicator.sendRequest(request);
-                return response.isSuccess();
-            }
-
-            @Override
-            protected void done() {
-                setLoadingState(false, "Ready");
-                try {
-                    boolean success = get();
-                    if (success) {
-                        setStatus("✅ Student added successfully", SUCCESS_COLOR);
-                        refreshData();
-                    } else {
-                        setStatus("❌ Failed to add student", DANGER_COLOR);
-                    }
-                } catch (Exception e) {
-                    setStatus("❌ Error saving student: " + e.getMessage(), DANGER_COLOR);
-                }
-            }
-        };
-        worker.execute();
-    }
-
-    private void saveNewCourse(String code, String title, String instructor) {
-        setLoadingState(true, "💾 Saving course...");
-
-        SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
-            @Override
-            protected Boolean doInBackground() throws Exception {
-                Course course = new Course(code, title, instructor);
-                Request request = new Request(RequestType.ADD_COURSE, course);
-                Response response = communicator.sendRequest(request);
-                return response.isSuccess();
-            }
-
-            @Override
-            protected void done() {
-                setLoadingState(false, "Ready");
-                try {
-                    boolean success = get();
-                    if (success) {
-                        setStatus("✅ Course added successfully", SUCCESS_COLOR);
-                        refreshData();
-                    } else {
-                        setStatus("❌ Failed to add course", DANGER_COLOR);
-                    }
-                } catch (Exception e) {
-                    setStatus("❌ Error saving course: " + e.getMessage(), DANGER_COLOR);
-                }
-            }
-        };
-        worker.execute();
-    }
-
-    private void deleteSelectedStudent() {
-        int selectedRow = studentsTable.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "❌ Please select a student to delete", "Selection Error", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String studentNumber = (String) studentsTable.getValueAt(selectedRow, 0);
-        String studentName = (String) studentsTable.getValueAt(selectedRow, 1);
-
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "🗑️ Are you sure you want to delete student:\n" + studentName + " (" + studentNumber + ")?",
-                "Confirm Deletion",
-                JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            setStatus("🗑️ Deleting student...", WARNING_COLOR);
-        }
-    }
-
-    private void deleteSelectedCourse() {
-        int selectedRow = coursesTable.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "❌ Please select a course to delete", "Selection Error", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String courseCode = (String) coursesTable.getValueAt(selectedRow, 0);
-        String courseName = (String) coursesTable.getValueAt(selectedRow, 1);
-
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "🗑️ Are you sure you want to delete course:\n" + courseName + " (" + courseCode + ")?",
-                "Confirm Deletion",
-                JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            setStatus("🗑️ Deleting course...", WARNING_COLOR);
-        }
-    }
-
-    private void viewCourseEnrollments() {
-        int selectedRow = coursesTable.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "❌ Please select a course to view enrollments", "Selection Error", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String courseCode = (String) coursesTable.getValueAt(selectedRow, 0);
-        String courseName = (String) coursesTable.getValueAt(selectedRow, 1);
-
-        JOptionPane.showMessageDialog(this,
-                "📊 Enrollment Report for:\n" + courseName + " (" + courseCode + ")\n\n" +
-                        "Total Enrolled: 25 students\n" +
-                        "Available Spots: 15\n" +
-                        "Enrollment Rate: 62%",
-                "Course Enrollments",
-                JOptionPane.INFORMATION_MESSAGE);
-    }
-
     private void logout() {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "🚪 Are you sure you want to logout?",
-                "Confirm Logout",
-                JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            communicator.disconnect();
-            cardLayout.show(cardPanel, "login");
+        try {
+            Request request = new Request(RequestType.LOGOUT);
+            client.sendRequest(request);
+        } catch (Exception e) {
+            // Ignore errors during logout
+        } finally {
+            client.disconnect();
+            new LoginGUI();
+            dispose();
         }
-    }
-
-    private void setLoadingState(boolean loading, String message) {
-        progressBar.setVisible(loading);
-        btnRefresh.setEnabled(!loading);
-        btnAddStudent.setEnabled(!loading);
-        btnAddCourse.setEnabled(!loading);
-        btnDeleteStudent.setEnabled(!loading);
-        btnDeleteCourse.setEnabled(!loading);
-        btnViewEnrollments.setEnabled(!loading);
-        setStatus(message, loading ? Color.BLUE : Color.DARK_GRAY);
-    }
-
-    private void setStatus(String message, Color color) {
-        lblStatus.setText(message);
-        lblStatus.setForeground(color);
     }
 }

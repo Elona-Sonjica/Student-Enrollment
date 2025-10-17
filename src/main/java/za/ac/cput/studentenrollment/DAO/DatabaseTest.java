@@ -26,31 +26,9 @@ public class DatabaseTest {
         courseDAO.createTable();
         enrollmentDAO.createTable();
         
-        //sample courses
-        Course[] sampleCourses = {
-            new Course("ADF262S", "Application Development Fundamentals", "Mr Burger"),
-            new Course("ADP262S", "Application Development Practice", "Mr Naidoo"),
-            new Course("ICT262S", "ICT Electives", "Mr Olivier"),
-            new Course("PROJ262S", "Project", "Ms Tswane"),
-            new Course("INM262S", "Information Management", "Mr Ayodeji")
-        };
-        
-        for (Course course : sampleCourses) {
-            if (!courseDAO.courseExists(course.getCourseCode())) {
-                courseDAO.addCourse(course);
-                System.out.println("Added course: " + course.getCourseCode());
-            }
-        }
-        
-        //sample student
-        Student sampleStudent = new Student("123456", "John", "Doe", "john.doe@mycput.ac.za", "password123");
-        if (studentDAO.getStudentByNumber("123456") == null) {
-            studentDAO.addStudent(sampleStudent);
-            System.out.println("Added sample student: " + sampleStudent.getStudentNumber());
-        }
-        
         System.out.println("Database setup completed successfully!");
         System.out.println("Available courses: " + courseDAO.getAllCourses().size());
         System.out.println("Registered students: " + studentDAO.getAllStudents().size());
+        System.out.println("Note: No sample data added. Users must register students and create courses through the application.");
     }
 }

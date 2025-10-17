@@ -1,4 +1,5 @@
 /*
+/*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
@@ -13,13 +14,14 @@ import za.ac.cput.studentenrollment.modelclasses.Course;
  *
  * @author elzas
  */
+
 public class CourseDAO {
     
     public void createTable() {
         String sql = "CREATE TABLE courses (" +
                     "course_code VARCHAR(20) PRIMARY KEY, " +
-                    "title VARCHAR(100) NOT NULL, " +
-                    "instructor VARCHAR(50) NOT NULL)";
+                    "title VARCHAR(150) NOT NULL, " +
+                    "instructor VARCHAR(100) NOT NULL)";
         
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement()) {
