@@ -6,12 +6,14 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+import javax.swing.table.DefaultTableCellRenderer;
 import za.ac.cput.studentenrollment.connection.ClientCommunicator;
+import za.ac.cput.studentenrollment.connection.Request;
 import za.ac.cput.studentenrollment.connection.RequestType;
 import za.ac.cput.studentenrollment.connection.Response;
 import za.ac.cput.studentenrollment.modelclasses.Course;
 import za.ac.cput.studentenrollment.modelclasses.Student;
-
+import za.ac.cput.studentenrollment.util.RoundedImageUtil;
 /**
  *
  * @author elzas
@@ -24,6 +26,7 @@ public class StudentGUI extends JFrame {
     private JTable enrollmentsTable;
     private DefaultTableModel coursesModel;
     private DefaultTableModel enrollmentsModel;
+    private JLabel statusLabel;
 
     public StudentGUI(ClientCommunicator client, Student student) {
         this.client = client;
@@ -36,7 +39,7 @@ public class StudentGUI extends JFrame {
     private void initializeUI() {
         setTitle("Student Portal - " + student.getStudentNumber());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 600);
+        setSize(900, 700);
         setLocationRelativeTo(null);
 
         // Menu bar
@@ -45,8 +48,19 @@ public class StudentGUI extends JFrame {
         JMenuItem logoutMenuItem = new JMenuItem("Logout");
         logoutMenuItem.addActionListener(e -> logout());
         fileMenu.add(logoutMenuItem);
+        
+        JMenuItem refreshMenuItem = new JMenuItem("Refresh");
+        refreshMenuItem.addActionListener(e -> refreshTables());
+        fileMenu.add(refreshMenuItem);
+        
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
+
+        // Main panel with header and tabs
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        // Add header
+        mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
 
         // Main panel with tabs
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -57,12 +71,71 @@ public class StudentGUI extends JFrame {
         // My Enrollments Tab
         tabbedPane.addTab("My Enrollments", createEnrollmentsPanel());
 
-        add(tabbedPane);
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+        
+        add(mainPanel);
         setVisible(true);
+    }
+
+    private JPanel createHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        headerPanel.setBackground(new Color(240, 240, 240));
+        
+        // Logo on the left
+        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        logoPanel.setBackground(new Color(240, 240, 240));
+        JLabel logoLabel = new JLabel();
+        ImageIcon smallLogo = RoundedImageUtil.createRoundedImageIcon("/images/cput-logo-1.jpg", 50);
+        if (smallLogo != null) {
+            logoLabel.setIcon(smallLogo);
+        } else {
+            // Fallback if image not found
+            logoLabel.setText("CPUT");
+            logoLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            logoLabel.setForeground(Color.BLUE);
+        }
+        logoPanel.add(logoLabel);
+        
+        // Welcome message and student info
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1));
+        infoPanel.setBackground(new Color(240, 240, 240));
+        
+        JLabel welcomeLabel = new JLabel("Student Portal - Welcome, " + student.getName() + " " + student.getSurname(), JLabel.CENTER);
+        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        welcomeLabel.setForeground(new Color(0, 51, 102));
+        
+        JLabel studentInfoLabel = new JLabel("Student Number: " + student.getStudentNumber() + " | Email: " + student.getEmail(), JLabel.CENTER);
+        studentInfoLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        studentInfoLabel.setForeground(Color.DARK_GRAY);
+        
+        infoPanel.add(welcomeLabel);
+        infoPanel.add(studentInfoLabel);
+        
+        headerPanel.add(logoPanel, BorderLayout.WEST);
+        headerPanel.add(infoPanel, BorderLayout.CENTER);
+        
+        return headerPanel;
     }
 
     private JPanel createCoursesPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Header panel with instructions and refresh button
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        JLabel headerLabel = new JLabel("Available Courses - Click 'Enroll' to register for a course");
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        headerLabel.setForeground(new Color(0, 51, 102));
+        headerPanel.add(headerLabel, BorderLayout.CENTER);
+        
+        JButton refreshButton = new JButton("Refresh Courses");
+        refreshButton.setBackground(new Color(0, 102, 204));
+        refreshButton.setForeground(Color.WHITE);
+        refreshButton.addActionListener(e -> loadCourses());
+        headerPanel.add(refreshButton, BorderLayout.EAST);
+        
+        panel.add(headerPanel, BorderLayout.NORTH);
 
         // Table for available courses
         String[] columns = {"Course Code", "Title", "Instructor", "Action"};
@@ -71,28 +144,90 @@ public class StudentGUI extends JFrame {
             public boolean isCellEditable(int row, int column) {
                 return column == 3; // Only action column is editable
             }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == 3 ? JButton.class : String.class;
+            }
         };
+        
         coursesTable = new JTable(coursesModel);
-        JScrollPane scrollPane = new JScrollPane(coursesTable);
+        coursesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        coursesTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        coursesTable.setRowHeight(30);
+        coursesTable.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        // Center align all columns except action
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < coursesTable.getColumnCount() - 1; i++) {
+            coursesTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
 
         // Add enroll button to each row
         coursesTable.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
         coursesTable.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox()));
 
+        JScrollPane scrollPane = new JScrollPane(coursesTable);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Courses Available for Enrollment"));
+        scrollPane.setPreferredSize(new Dimension(800, 300));
         panel.add(scrollPane, BorderLayout.CENTER);
+
+        // Status label
+        statusLabel = new JLabel("Loading available courses...");
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        panel.add(statusLabel, BorderLayout.SOUTH);
 
         return panel;
     }
 
     private JPanel createEnrollmentsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Header panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        JLabel headerLabel = new JLabel("My Current Enrollments");
+        headerLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        headerLabel.setForeground(new Color(0, 51, 102));
+        headerPanel.add(headerLabel, BorderLayout.CENTER);
+        
+        JButton refreshButton = new JButton("Refresh Enrollments");
+        refreshButton.setBackground(new Color(0, 102, 204));
+        refreshButton.setForeground(Color.WHITE);
+        refreshButton.addActionListener(e -> loadEnrollments());
+        headerPanel.add(refreshButton, BorderLayout.EAST);
+        
+        panel.add(headerPanel, BorderLayout.NORTH);
 
         // Table for enrolled courses
         String[] columns = {"Course Code", "Title", "Instructor"};
-        enrollmentsModel = new DefaultTableModel(columns, 0);
+        enrollmentsModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table non-editable
+            }
+        };
+        
         enrollmentsTable = new JTable(enrollmentsModel);
-        JScrollPane scrollPane = new JScrollPane(enrollmentsTable);
+        enrollmentsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        enrollmentsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        enrollmentsTable.setRowHeight(25);
+        enrollmentsTable.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        // Center align all columns
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < enrollmentsTable.getColumnCount(); i++) {
+            enrollmentsTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
 
+        JScrollPane scrollPane = new JScrollPane(enrollmentsTable);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Currently Enrolled Courses"));
+        scrollPane.setPreferredSize(new Dimension(800, 300));
         panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
@@ -100,21 +235,26 @@ public class StudentGUI extends JFrame {
 
     private void loadCourses() {
         try {
-            // Use fully qualified name for Request
-            za.ac.cput.studentenrollment.connection.Request request = 
-                new za.ac.cput.studentenrollment.connection.Request(RequestType.GET_ALL_COURSES);
+            statusLabel.setText("Loading available courses...");
+            Request request = new Request(RequestType.GET_ALL_COURSES);
             Response response = client.sendRequest(request);
             
             if (response.isSuccess()) {
                 List<Course> courses = (List<Course>) response.getData();
                 coursesModel.setRowCount(0);
                 
-                // Load current enrollments to check which courses are already enrolled
-                za.ac.cput.studentenrollment.connection.Request enrollRequest = 
-                    new za.ac.cput.studentenrollment.connection.Request(RequestType.GET_STUDENT_ENROLLMENTS, student.getStudentNumber());
-                Response enrollResponse = client.sendRequest(enrollRequest);
-                List<Course> currentEnrollments = (List<Course>) enrollResponse.getData();
+                if (courses.isEmpty()) {
+                    statusLabel.setText("No courses available. Please ask administrator to add courses.");
+                    return;
+                }
                 
+                // Load current enrollments to check which courses are already enrolled
+                Request enrollRequest = new Request(RequestType.GET_STUDENT_ENROLLMENTS, student.getStudentNumber());
+                Response enrollResponse = client.sendRequest(enrollRequest);
+                List<Course> currentEnrollments = enrollResponse.isSuccess() ? 
+                    (List<Course>) enrollResponse.getData() : List.of();
+                
+                int availableCount = 0;
                 for (Course course : courses) {
                     boolean isEnrolled = currentEnrollments.stream()
                             .anyMatch(enrolled -> enrolled.getCourseCode().equals(course.getCourseCode()));
@@ -126,58 +266,78 @@ public class StudentGUI extends JFrame {
                             course.getInstructor(),
                             "Enroll"
                         });
+                        availableCount++;
                     }
                 }
+                
+                if (availableCount == 0) {
+                    statusLabel.setText("No available courses to enroll in. You are already enrolled in all courses.");
+                } else {
+                    statusLabel.setText(availableCount + " courses available for enrollment");
+                }
             } else {
+                statusLabel.setText("Error loading courses");
                 JOptionPane.showMessageDialog(this, "Error loading courses: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
+            statusLabel.setText("Error loading courses");
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
     private void loadEnrollments() {
         try {
-            // Use fully qualified name for Request
-            za.ac.cput.studentenrollment.connection.Request request = 
-                new za.ac.cput.studentenrollment.connection.Request(RequestType.GET_STUDENT_ENROLLMENTS, student.getStudentNumber());
+            Request request = new Request(RequestType.GET_STUDENT_ENROLLMENTS, student.getStudentNumber());
             Response response = client.sendRequest(request);
             
             if (response.isSuccess()) {
                 List<Course> enrollments = (List<Course>) response.getData();
                 enrollmentsModel.setRowCount(0);
                 
-                for (Course course : enrollments) {
-                    enrollmentsModel.addRow(new Object[]{
-                        course.getCourseCode(),
-                        course.getTitle(),
-                        course.getInstructor()
-                    });
+                if (enrollments.isEmpty()) {
+                    // Show message in table when no enrollments
+                    enrollmentsModel.setRowCount(1);
+                    enrollmentsModel.setValueAt("No course enrollments found. Please enroll in courses from the 'Available Courses' tab.", 0, 0);
+                    enrollmentsModel.setValueAt("", 0, 1);
+                    enrollmentsModel.setValueAt("", 0, 2);
+                } else {
+                    for (Course course : enrollments) {
+                        enrollmentsModel.addRow(new Object[]{
+                            course.getCourseCode(),
+                            course.getTitle(),
+                            course.getInstructor()
+                        });
+                    }
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Error loading enrollments: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
-    private void enrollInCourse(String courseCode) {
+    private void enrollInCourse(String courseCode, String courseTitle) {
         try {
             Object[] enrollmentData = new Object[]{student.getStudentNumber(), courseCode};
-            // Use fully qualified name for Request
-            za.ac.cput.studentenrollment.connection.Request request = 
-                new za.ac.cput.studentenrollment.connection.Request(RequestType.ENROLL_STUDENT, enrollmentData);
+            Request request = new Request(RequestType.ENROLL_STUDENT, enrollmentData);
             Response response = client.sendRequest(request);
             
             if (response.isSuccess()) {
-                JOptionPane.showMessageDialog(this, "Successfully enrolled in " + courseCode, "Success", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, 
+                    "Successfully enrolled in " + courseCode + " - " + courseTitle, 
+                    "Enrollment Successful", 
+                    JOptionPane.INFORMATION_MESSAGE
+                );
                 refreshTables();
             } else {
                 JOptionPane.showMessageDialog(this, "Failed to enroll: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
@@ -188,9 +348,7 @@ public class StudentGUI extends JFrame {
 
     private void logout() {
         try {
-            // Use fully qualified name for Request
-            za.ac.cput.studentenrollment.connection.Request request = 
-                new za.ac.cput.studentenrollment.connection.Request(RequestType.LOGOUT);
+            Request request = new Request(RequestType.LOGOUT);
             client.sendRequest(request);
         } catch (Exception e) {
             // Ignore errors during logout
@@ -205,6 +363,10 @@ public class StudentGUI extends JFrame {
     class ButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);
+            setBackground(new Color(0, 102, 204));
+            setForeground(Color.WHITE);
+            setFont(new Font("Arial", Font.BOLD, 11));
+            setBorder(BorderFactory.createRaisedBevelBorder());
         }
 
         @Override
@@ -218,16 +380,32 @@ public class StudentGUI extends JFrame {
     class ButtonEditor extends DefaultCellEditor {
         private JButton button;
         private String currentCourseCode;
+        private String currentCourseTitle;
 
         public ButtonEditor(JCheckBox checkBox) {
             super(checkBox);
             button = new JButton();
             button.setOpaque(true);
+            button.setBackground(new Color(0, 102, 204));
+            button.setForeground(Color.WHITE);
+            button.setFont(new Font("Arial", Font.BOLD, 11));
+            button.setBorder(BorderFactory.createRaisedBevelBorder());
+            
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     fireEditingStopped();
-                    enrollInCourse(currentCourseCode);
+                    int choice = JOptionPane.showConfirmDialog(
+                        StudentGUI.this,
+                        "Are you sure you want to enroll in:\n" + 
+                        currentCourseCode + " - " + currentCourseTitle + "?",
+                        "Confirm Enrollment",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE
+                    );
+                    if (choice == JOptionPane.YES_OPTION) {
+                        enrollInCourse(currentCourseCode, currentCourseTitle);
+                    }
                 }
             });
         }
@@ -236,6 +414,7 @@ public class StudentGUI extends JFrame {
         public Component getTableCellEditorComponent(JTable table, Object value,
                 boolean isSelected, int row, int column) {
             currentCourseCode = table.getValueAt(row, 0).toString();
+            currentCourseTitle = table.getValueAt(row, 1).toString();
             button.setText(value.toString());
             return button;
         }

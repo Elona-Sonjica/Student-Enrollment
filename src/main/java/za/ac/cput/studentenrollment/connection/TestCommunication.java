@@ -8,6 +8,7 @@ package za.ac.cput.studentenrollment.connection;
  *
  * @author elzas
  */
+
 public class TestCommunication {
     public static void main(String[] args) {
         System.out.println("=== Simple Client-Server Test ===");

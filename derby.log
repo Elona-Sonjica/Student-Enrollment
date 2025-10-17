@@ -1,6 +1,6 @@
 ----------------------------------------------------------------
-Thu Oct 16 22:00:48 SAST 2025:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.15.2.0 - (1873585): instance a816c00e-0199-ee9c-553a-000007c58650 
+Fri Oct 17 02:11:43 SAST 2025:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.15.2.0 - (1873585): instance a816c00e-0199-ef82-0b7d-000007c84710 
 on database directory C:\Users\elzas\OneDrive - Cape Peninsula University of Technology\Documents\NetBeansProjects\studentEnrollment\StudentEnrolmentDB with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@70dea4e 
 Loaded from file:/C:/Users/elzas/.m2/repository/org/apache/derby/derby/10.15.2.0/derby-10.15.2.0.jar
 java.vendor=Oracle Corporation

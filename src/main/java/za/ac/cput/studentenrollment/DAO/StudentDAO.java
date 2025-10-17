@@ -9,10 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 import za.ac.cput.studentenrollment.Database.DBConnection;
 import za.ac.cput.studentenrollment.modelclasses.Student;
+import za.ac.cput.studentenrollment.util.PasswordUtil;
 /**
  *
  * @author elzas
  */
+
 public class StudentDAO {
     
     public void createTable() {
@@ -21,7 +23,7 @@ public class StudentDAO {
                     "name VARCHAR(50) NOT NULL, " +
                     "surname VARCHAR(50) NOT NULL, " +
                     "email VARCHAR(100) NOT NULL, " +
-                    "password VARCHAR(50) NOT NULL)";
+                    "password VARCHAR(100) NOT NULL)";
         
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement()) {
@@ -57,23 +59,26 @@ public class StudentDAO {
     }
     
     public Student authenticate(String studentNumber, String password) {
-        String sql = "SELECT * FROM students WHERE student_number = ? AND password = ?";
+        String sql = "SELECT * FROM students WHERE student_number = ?";
         
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, studentNumber);
-            pstmt.setString(2, password);
-            
             ResultSet rs = pstmt.executeQuery();
+            
             if (rs.next()) {
-                Student student = new Student();
-                student.setStudentNumber(rs.getString("student_number"));
-                student.setName(rs.getString("name"));
-                student.setSurname(rs.getString("surname"));
-                student.setEmail(rs.getString("email"));
-                student.setPassword(rs.getString("password"));
-                return student;
+                String storedPassword = rs.getString("password");
+                // Verify the password against the stored hash
+                if (PasswordUtil.verifyPassword(password, storedPassword)) {
+                    Student student = new Student();
+                    student.setStudentNumber(rs.getString("student_number"));
+                    student.setName(rs.getString("name"));
+                    student.setSurname(rs.getString("surname"));
+                    student.setEmail(rs.getString("email"));
+                    student.setPassword(rs.getString("password"));
+                    return student;
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error authenticating student: " + e.getMessage());
@@ -83,7 +88,7 @@ public class StudentDAO {
     
     public List<Student> getAllStudents() {
         List<Student> students = new ArrayList<>();
-        String sql = "SELECT * FROM students WHERE student_number != 'admin'";
+        String sql = "SELECT * FROM students WHERE student_number != 'admin' ORDER BY student_number";
         
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();

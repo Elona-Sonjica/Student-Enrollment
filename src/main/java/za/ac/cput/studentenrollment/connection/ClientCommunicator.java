@@ -6,10 +6,12 @@ package za.ac.cput.studentenrollment.connection;
 
 import java.io.*;
 import java.net.Socket;
+
 /**
  *
  * @author elzas
  */
+
 public class ClientCommunicator {
     private static final String SERVER_HOST = "localhost";
     private static final int SERVER_PORT = 6666;
@@ -36,6 +38,7 @@ public class ClientCommunicator {
             output.flush();
             return (Response) input.readObject();
         } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error sending request: " + e.getMessage());
             return new Response(ResponseStatus.ERROR, "Communication error: " + e.getMessage());
         }
     }

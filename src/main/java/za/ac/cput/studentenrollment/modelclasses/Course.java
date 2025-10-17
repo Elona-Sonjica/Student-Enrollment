@@ -10,7 +10,10 @@ import java.io.Serializable;
  *
  * @author elzas
  */
+
 public class Course implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private String courseCode;
     private String title;
     private String instructor;

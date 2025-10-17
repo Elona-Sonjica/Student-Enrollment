@@ -8,6 +8,7 @@ import java.io.Serializable;
  *
  * @author elzas
  */
+
 public class Response implements Serializable {
     private ResponseStatus status;
     private Object data;

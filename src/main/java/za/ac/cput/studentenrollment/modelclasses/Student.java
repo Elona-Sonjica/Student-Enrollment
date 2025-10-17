@@ -9,7 +9,10 @@ import java.io.Serializable;
  *
  * @author elzas
  */
+
 public class Student implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private String studentNumber;
     private String name;
     private String surname;

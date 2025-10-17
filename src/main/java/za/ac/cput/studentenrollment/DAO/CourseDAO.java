@@ -14,6 +14,7 @@ import za.ac.cput.studentenrollment.modelclasses.Course;
  *
  * @author elzas
  */
+
 public class CourseDAO {
     
     public void createTable() {
