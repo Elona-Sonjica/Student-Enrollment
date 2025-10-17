@@ -10,10 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import za.ac.cput.studentenrollment.Database.DBConnection;
 import za.ac.cput.studentenrollment.modelclasses.Course;
-/**
- *
- * @author elzas
- */
+
 
 public class CourseDAO {
     

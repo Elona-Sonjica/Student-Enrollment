@@ -4,22 +4,16 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Enhanced User class for future extensibility
- * Currently not used in the main application but available for future features
- */
 public class User implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    // Core user properties
     private String username;
     private String password;
-    private String role; // "ADMIN", "STUDENT", "LECTURER"
-    private String studentNumber; // null for non-students
+    private String role;
+    private String studentNumber;
     private String email;
     private String fullName;
 
-    // Security & tracking
     private transient String temporaryPassword;
     private boolean accountActive;
     private boolean passwordExpired;
@@ -28,19 +22,16 @@ public class User implements Serializable {
     private LocalDateTime accountCreated;
     private LocalDateTime lastPasswordChange;
 
-    // Preferences
-    private String themePreference; // "LIGHT", "DARK", "SYSTEM"
+    private String themePreference;
     private boolean emailNotifications;
     private boolean smsNotifications;
-    private String language; // "en", "af", "zu"
+    private String language;
 
-    // Security questions (optional)
     private String securityQuestion1;
     private String securityAnswer1;
     private String securityQuestion2;
     private String securityAnswer2;
 
-    // Constructors
     public User() {
         this.accountActive = true;
         this.loginAttempts = 0;
@@ -53,7 +44,7 @@ public class User implements Serializable {
     public User(String username, String password, String role, String studentNumber) {
         this();
         this.username = username;
-        setPassword(password); // Use setter for validation
+        setPassword(password);
         this.role = role != null ? role.toUpperCase() : "STUDENT";
         this.studentNumber = studentNumber;
     }
@@ -65,7 +56,6 @@ public class User implements Serializable {
         this.fullName = fullName;
     }
 
-    // Enhanced Getters and Setters with validation
     public String getUsername() {
         return username;
     }
@@ -145,11 +135,10 @@ public class User implements Serializable {
         this.fullName = fullName != null ? fullName.trim() : null;
     }
 
-    // Security methods
     public void incrementLoginAttempts() {
         this.loginAttempts++;
         if (this.loginAttempts >= 5) {
-            this.accountActive = false; // Lock account after 5 failed attempts
+            this.accountActive = false;
         }
     }
 
@@ -179,9 +168,8 @@ public class User implements Serializable {
         setPassword(newPassword);
     }
 
-    // Validation methods
     public boolean isValidEmail(String email) {
-        return email != null && email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }
 
     public boolean isPasswordStrong() {
@@ -196,10 +184,9 @@ public class User implements Serializable {
     public boolean canPerformAction(String requiredRole) {
         if (isAccountLocked()) return false;
 
-        // Role hierarchy
         switch (this.role) {
             case "ADMIN":
-                return true; // Admin can do everything
+                return true;
             case "LECTURER":
                 return !requiredRole.equals("ADMIN");
             case "STUDENT":
@@ -209,7 +196,6 @@ public class User implements Serializable {
         }
     }
 
-    // Utility methods
     private String generateRandomPassword(int length) {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
         StringBuilder sb = new StringBuilder();
@@ -232,7 +218,6 @@ public class User implements Serializable {
         return "ACTIVE";
     }
 
-    // Business logic methods
     public boolean requiresPasswordChange() {
         if (lastPasswordChange == null) return true;
         return lastPasswordChange.isBefore(LocalDateTime.now().minusDays(90)) ||
@@ -245,11 +230,11 @@ public class User implements Serializable {
     }
 
     public boolean verifySecurityAnswers(String answer1, String answer2) {
-        return securityAnswer1.equalsIgnoreCase(answer1.trim()) &&
+        return securityAnswer1 != null && securityAnswer2 != null &&
+                securityAnswer1.equalsIgnoreCase(answer1.trim()) &&
                 securityAnswer2.equalsIgnoreCase(answer2.trim());
     }
 
-    // Override methods
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -271,7 +256,6 @@ public class User implements Serializable {
         );
     }
 
-    // Builder pattern for fluent creation
     public static class Builder {
         private User user;
 
@@ -318,7 +302,6 @@ public class User implements Serializable {
         }
 
         public User build() {
-            // Validate required fields
             if (user.username == null) {
                 throw new IllegalStateException("Username is required");
             }
@@ -332,7 +315,6 @@ public class User implements Serializable {
         }
     }
 
-    // Static factory methods
     public static User createAdmin(String username, String password, String fullName, String email) {
         return new Builder()
                 .username(username)
@@ -355,7 +337,6 @@ public class User implements Serializable {
                 .build();
     }
 
-    // Getters for security fields (package-private for security)
     String getTemporaryPassword() { return temporaryPassword; }
     boolean isAccountActive() { return accountActive; }
     boolean isPasswordExpired() { return passwordExpired; }
@@ -370,7 +351,6 @@ public class User implements Serializable {
     String getSecurityQuestion1() { return securityQuestion1; }
     String getSecurityQuestion2() { return securityQuestion2; }
 
-    // Setters for security fields
     void setAccountActive(boolean accountActive) { this.accountActive = accountActive; }
     void setPasswordExpired(boolean passwordExpired) { this.passwordExpired = passwordExpired; }
     void setLoginAttempts(int loginAttempts) { this.loginAttempts = loginAttempts; }
