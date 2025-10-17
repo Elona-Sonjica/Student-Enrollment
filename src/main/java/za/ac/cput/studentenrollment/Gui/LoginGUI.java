@@ -18,7 +18,7 @@ import za.ac.cput.studentenrollment.util.RoundedImageUtil;
 
 /**
  *
- * @author elzas
+ * @author Abulele
  */
 
 public class LoginGUI extends JFrame {
@@ -116,11 +116,11 @@ public class LoginGUI extends JFrame {
     private JPanel createLogoPanel() {
         JPanel logoPanel = new JPanel(new BorderLayout());
         logoPanel.setBackground(Color.WHITE);
-        logoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        logoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
 
         // Try to load the image logo first
         logoLabel = new JLabel();
-        ImageIcon roundedLogo = RoundedImageUtil.createRoundedImageIcon("/images/my-logo-1.jpg", 80);
+        ImageIcon roundedLogo = RoundedImageUtil.createRoundedImageIcon("/images/my-logo.jpg", 80);
         if (roundedLogo != null) {
             logoLabel.setIcon(roundedLogo);
             logoLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -131,29 +131,9 @@ public class LoginGUI extends JFrame {
         JPanel textLogoPanel = new JPanel();
         textLogoPanel.setLayout(new BoxLayout(textLogoPanel, BoxLayout.Y_AXIS));
         textLogoPanel.setBackground(Color.WHITE);
-        textLogoPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        textLogoPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
 
-        // CPUT Logo Text
-        JLabel mainTitle = new JLabel("Cape Peninsula", JLabel.CENTER);
-        mainTitle.setFont(new Font("Arial", Font.BOLD, 20));
-        mainTitle.setForeground(new Color(0, 51, 102)); // Dark blue
-        mainTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subTitle = new JLabel("University of Technology", JLabel.CENTER);
-        subTitle.setFont(new Font("Arial", Font.BOLD, 16));
-        subTitle.setForeground(new Color(0, 51, 102)); // Dark blue
-        subTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel tagline = new JLabel("creating futures", JLabel.CENTER);
-        tagline.setFont(new Font("Arial", Font.ITALIC, 14));
-        tagline.setForeground(new Color(204, 0, 0)); // Red color for contrast
-        tagline.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        textLogoPanel.add(mainTitle);
-        textLogoPanel.add(Box.createVerticalStrut(2));
-        textLogoPanel.add(subTitle);
-        textLogoPanel.add(Box.createVerticalStrut(5));
-        textLogoPanel.add(tagline);
 
         logoPanel.add(textLogoPanel, BorderLayout.CENTER);
 
