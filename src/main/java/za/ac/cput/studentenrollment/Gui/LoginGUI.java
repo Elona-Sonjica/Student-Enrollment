@@ -39,54 +39,44 @@ public class LoginGUI extends JFrame {
     private void initializeUI() {
         setTitle("Student Enrollment System - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(450, 550); // Increased height to accommodate register button
+        setSize(450, 650); // Increased height to accommodate logo and register button
         setLocationRelativeTo(null);
         setResizable(false);
 
         // Main panel
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
 
-        // Logo panel
-        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        logoLabel = new JLabel();
-
-        // Load and set the rounded logo (150px size)
-        ImageIcon roundedLogo = RoundedImageUtil.createRoundedImageIcon("/images/my-logo-1.jpg", 150);
-        if (roundedLogo != null) {
-            logoLabel.setIcon(roundedLogo);
-        } else {
-            // Fallback text if image not found
-            logoLabel.setText("CPUT Logo");
-            logoLabel.setFont(new Font("Arial", Font.BOLD, 16));
-            logoLabel.setForeground(Color.BLUE);
-        }
-
-        logoPanel.add(logoLabel);
+        // Logo panel with CPUT text
+        JPanel logoPanel = createLogoPanel();
         mainPanel.add(logoPanel, BorderLayout.NORTH);
 
         // Title
         JLabel titleLabel = new JLabel("Student Enrollment System", JLabel.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        titleLabel.setForeground(new Color(0, 51, 102)); // Dark blue color
         mainPanel.add(titleLabel, BorderLayout.CENTER);
 
         // Form panel
         JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        formPanel.add(new JLabel("Student Number:"));
+        formPanel.add(createStyledLabel("Student Number:"));
         studentNumberField = new JTextField();
         formPanel.add(studentNumberField);
 
-        formPanel.add(new JLabel("Password:"));
+        formPanel.add(createStyledLabel("Password:"));
         passwordField = new JPasswordField();
         formPanel.add(passwordField);
 
-        formPanel.add(new JLabel("Email:"));
+        formPanel.add(createStyledLabel("Email:"));
         emailField = new JTextField();
         formPanel.add(emailField);
 
-        formPanel.add(new JLabel("Admin Login:"));
+        formPanel.add(createStyledLabel("Admin Login:"));
         adminCheckBox = new JCheckBox();
         formPanel.add(adminCheckBox);
 
@@ -94,9 +84,18 @@ public class LoginGUI extends JFrame {
 
         // Button panel - UPDATED WITH REGISTER BUTTON
         JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.setBackground(Color.WHITE);
         loginButton = new JButton("Login");
         clearButton = new JButton("Clear");
         JButton registerButton = new JButton("Register New Student"); // NEW: Registration button
+
+        // Style buttons
+        loginButton.setBackground(new Color(0, 102, 204));
+        loginButton.setForeground(Color.WHITE);
+        clearButton.setBackground(new Color(102, 102, 102));
+        clearButton.setForeground(Color.WHITE);
+        registerButton.setBackground(new Color(0, 153, 76));
+        registerButton.setForeground(Color.WHITE);
 
         buttonPanel.add(loginButton);
         buttonPanel.add(clearButton);
@@ -112,6 +111,60 @@ public class LoginGUI extends JFrame {
 
         add(mainPanel);
         setVisible(true);
+    }
+
+    private JPanel createLogoPanel() {
+        JPanel logoPanel = new JPanel(new BorderLayout());
+        logoPanel.setBackground(Color.WHITE);
+        logoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+
+        // Try to load the image logo first
+        logoLabel = new JLabel();
+        ImageIcon roundedLogo = RoundedImageUtil.createRoundedImageIcon("/images/my-logo-1.jpg", 80);
+        if (roundedLogo != null) {
+            logoLabel.setIcon(roundedLogo);
+            logoLabel.setHorizontalAlignment(JLabel.CENTER);
+            logoPanel.add(logoLabel, BorderLayout.NORTH);
+        }
+
+        // Create text logo panel
+        JPanel textLogoPanel = new JPanel();
+        textLogoPanel.setLayout(new BoxLayout(textLogoPanel, BoxLayout.Y_AXIS));
+        textLogoPanel.setBackground(Color.WHITE);
+        textLogoPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+
+        // CPUT Logo Text
+        JLabel mainTitle = new JLabel("Cape Peninsula", JLabel.CENTER);
+        mainTitle.setFont(new Font("Arial", Font.BOLD, 20));
+        mainTitle.setForeground(new Color(0, 51, 102)); // Dark blue
+        mainTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel subTitle = new JLabel("University of Technology", JLabel.CENTER);
+        subTitle.setFont(new Font("Arial", Font.BOLD, 16));
+        subTitle.setForeground(new Color(0, 51, 102)); // Dark blue
+        subTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel tagline = new JLabel("creating futures", JLabel.CENTER);
+        tagline.setFont(new Font("Arial", Font.ITALIC, 14));
+        tagline.setForeground(new Color(204, 0, 0)); // Red color for contrast
+        tagline.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        textLogoPanel.add(mainTitle);
+        textLogoPanel.add(Box.createVerticalStrut(2));
+        textLogoPanel.add(subTitle);
+        textLogoPanel.add(Box.createVerticalStrut(5));
+        textLogoPanel.add(tagline);
+
+        logoPanel.add(textLogoPanel, BorderLayout.CENTER);
+
+        return logoPanel;
+    }
+
+    private JLabel createStyledLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Arial", Font.BOLD, 12));
+        label.setForeground(new Color(0, 51, 102));
+        return label;
     }
 
     private void setupEventListeners() {
@@ -205,23 +258,12 @@ public class LoginGUI extends JFrame {
     private void showRegistrationDialog() {
         JDialog dialog = new JDialog(this, "Student Registration", true);
         dialog.setLayout(new BorderLayout(10, 10));
-        dialog.setSize(500, 450); // Increased size for better layout
+        dialog.setSize(500, 500); // Increased size for better layout
         dialog.setLocationRelativeTo(this);
         dialog.getContentPane().setBackground(new Color(240, 240, 240));
 
         // ADD LOGO PANEL AT TOP
-        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        logoPanel.setBackground(new Color(240, 240, 240));
-        JLabel regLogoLabel = new JLabel();
-        ImageIcon smallLogo = RoundedImageUtil.createRoundedImageIcon("/images/my-logo-1.jpg", 80);
-        if (smallLogo != null) {
-            regLogoLabel.setIcon(smallLogo);
-        } else {
-            regLogoLabel.setText("Student Registration");
-            regLogoLabel.setFont(new Font("Arial", Font.BOLD, 14));
-            regLogoLabel.setForeground(new Color(0, 51, 102));
-        }
-        logoPanel.add(regLogoLabel);
+        JPanel logoPanel = createLogoPanel();
         dialog.add(logoPanel, BorderLayout.NORTH);
 
         // CREATE SCROLLABLE FORM PANEL
@@ -232,22 +274,15 @@ public class LoginGUI extends JFrame {
         JTextField numberField = new JTextField();
         JTextField nameField = new JTextField();
         JTextField surnameField = new JTextField();
-        JTextField emailField = new JTextField();
-        JPasswordField passwordField = new JPasswordField();
+        JTextField regEmailField = new JTextField();
+        JPasswordField regPasswordField = new JPasswordField();
 
         // Create labels with bold font
-        JLabel numberLabel = new JLabel("Student Number*:");
-        JLabel nameLabel = new JLabel("Name*:");
-        JLabel surnameLabel = new JLabel("Surname*:");
-        JLabel emailLabel = new JLabel("Email*:");
-        JLabel passwordLabel = new JLabel("Password*:");
-
-        Font boldFont = new Font("Arial", Font.BOLD, 12);
-        numberLabel.setFont(boldFont);
-        nameLabel.setFont(boldFont);
-        surnameLabel.setFont(boldFont);
-        emailLabel.setFont(boldFont);
-        passwordLabel.setFont(boldFont);
+        JLabel numberLabel = createStyledLabel("Student Number*:");
+        JLabel nameLabel = createStyledLabel("Name*:");
+        JLabel surnameLabel = createStyledLabel("Surname*:");
+        JLabel emailLabel = createStyledLabel("Email*:");
+        JLabel passwordLabel = createStyledLabel("Password*:");
 
         formPanel.add(numberLabel);
         formPanel.add(numberField);
@@ -256,9 +291,9 @@ public class LoginGUI extends JFrame {
         formPanel.add(surnameLabel);
         formPanel.add(surnameField);
         formPanel.add(emailLabel);
-        formPanel.add(emailField);
+        formPanel.add(regEmailField);
         formPanel.add(passwordLabel);
-        formPanel.add(passwordField);
+        formPanel.add(regPasswordField);
 
         // Add some instructional text
         formPanel.add(new JLabel(""));
@@ -301,8 +336,8 @@ public class LoginGUI extends JFrame {
             String number = numberField.getText().trim();
             String name = nameField.getText().trim();
             String surname = surnameField.getText().trim();
-            String email = emailField.getText().trim();
-            String password = new String(passwordField.getPassword());
+            String email = regEmailField.getText().trim();
+            String password = new String(regPasswordField.getPassword());
 
             // Validation
             if (number.isEmpty() || name.isEmpty() || surname.isEmpty() || email.isEmpty() || password.isEmpty()) {

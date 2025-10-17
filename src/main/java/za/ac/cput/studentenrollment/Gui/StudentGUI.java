@@ -32,6 +32,7 @@ public class StudentGUI extends JFrame {
     private JLabel statusLabel;
     private JComboBox<String> courseComboBox; // NEW: Added for course selection
     private Map<String, List<Student>> courseStudentsMap; // NEW: Added for storing course-student data
+    private JButton logoutButton; // NEW: Added visible logout button
 
     public StudentGUI(ClientCommunicator client, Student student) {
         this.client = client;
@@ -65,7 +66,7 @@ public class StudentGUI extends JFrame {
         // Main panel with header and tabs
         JPanel mainPanel = new JPanel(new BorderLayout());
 
-        // Add header
+        // Add header with LOGOUT BUTTON
         mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
 
         // Main panel with tabs
@@ -121,8 +122,20 @@ public class StudentGUI extends JFrame {
         infoPanel.add(welcomeLabel);
         infoPanel.add(studentInfoLabel);
 
+        // NEW: Logout button on the right
+        JPanel logoutPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        logoutPanel.setBackground(new Color(240, 240, 240));
+        logoutButton = new JButton("Logout");
+        logoutButton.setBackground(new Color(220, 53, 69)); // Red color for logout
+        logoutButton.setForeground(Color.WHITE);
+        logoutButton.setFont(new Font("Arial", Font.BOLD, 12));
+        logoutButton.setPreferredSize(new Dimension(100, 30));
+        logoutButton.addActionListener(e -> logout());
+        logoutPanel.add(logoutButton);
+
         headerPanel.add(logoPanel, BorderLayout.WEST);
         headerPanel.add(infoPanel, BorderLayout.CENTER);
+        headerPanel.add(logoutPanel, BorderLayout.EAST); // NEW: Add logout button to header
 
         return headerPanel;
     }
