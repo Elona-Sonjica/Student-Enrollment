@@ -8,6 +8,8 @@ import java.io.*;
 import java.net.*;
 import java.sql.Connection;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import za.ac.cput.studentenrollment.DAO.CourseDAO;
 import za.ac.cput.studentenrollment.DAO.EnrollmentDAO;
 import za.ac.cput.studentenrollment.DAO.StudentDAO;
@@ -40,7 +42,7 @@ public class Server {
             while (running) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("New client connected");
-                
+
                 // Handle client in new thread
                 new Thread(new ClientHandler(clientSocket)).start();
             }
@@ -93,7 +95,7 @@ public class Server {
                     Response response = processRequest(request);
                     output.writeObject(response);
                     output.flush();
-                    
+
                     if (request.getType() == RequestType.LOGOUT) {
                         break;
                     }
@@ -127,6 +129,8 @@ public class Server {
                         return handleGetAllStudents();
                     case GET_COURSE_ENROLLMENTS:
                         return handleGetCourseEnrollments(request);
+                    case GET_STUDENTS_IN_MY_COURSES: // NEW: Added case
+                        return handleGetStudentsInMyCourses(request);
                     case LOGOUT:
                         return new Response(ResponseStatus.SUCCESS, "Logged out");
                     default:
@@ -204,21 +208,21 @@ public class Server {
                 Object[] data = (Object[]) request.getData();
                 String studentNumber = (String) data[0];
                 String courseCode = (String) data[1];
-                
+
                 // Validation
                 if (!InputValidator.isValidStudentNumber(studentNumber)) {
                     return new Response(ResponseStatus.ERROR, "Invalid student number");
                 }
-                
+
                 CourseDAO courseDAO = new CourseDAO();
                 Course course = courseDAO.getCourseByCode(courseCode);
                 if (course == null) {
                     return new Response(ResponseStatus.ERROR, "Course not found: " + courseCode);
                 }
-                
+
                 EnrollmentDAO enrollmentDAO = new EnrollmentDAO();
                 boolean success = enrollmentDAO.enrollStudent(studentNumber, courseCode);
-                
+
                 if (success) {
                     return new Response(ResponseStatus.SUCCESS, "Enrolled successfully in " + course.getTitle());
                 } else {
@@ -233,11 +237,11 @@ public class Server {
         private Response handleGetStudentEnrollments(Request request) {
             try {
                 String studentNumber = (String) request.getData();
-                
+
                 if (!InputValidator.isValidStudentNumber(studentNumber) && !"admin".equals(studentNumber)) {
                     return new Response(ResponseStatus.ERROR, "Invalid student number");
                 }
-                
+
                 EnrollmentDAO enrollmentDAO = new EnrollmentDAO();
                 List<Course> enrollments = enrollmentDAO.getStudentEnrollments(studentNumber);
                 if (enrollments.isEmpty()) {
@@ -253,35 +257,35 @@ public class Server {
         private Response handleAddStudent(Request request) {
             try {
                 Student student = (Student) request.getData();
-                
+
                 // Validation
                 if (!InputValidator.isValidStudentNumber(student.getStudentNumber())) {
                     return new Response(ResponseStatus.ERROR, "Invalid student number format (5-10 digits required)");
                 }
-                
+
                 if (!InputValidator.isValidName(student.getName()) || !InputValidator.isValidName(student.getSurname())) {
                     return new Response(ResponseStatus.ERROR, "Invalid name or surname");
                 }
-                
+
                 if (!InputValidator.isValidEmail(student.getEmail())) {
                     return new Response(ResponseStatus.ERROR, "Invalid email format");
                 }
-                
+
                 if (!InputValidator.isValidPassword(student.getPassword())) {
                     return new Response(ResponseStatus.ERROR, "Password must be at least 6 characters");
                 }
-                
+
                 StudentDAO studentDAO = new StudentDAO();
-                
+
                 // Check if student already exists
                 if (studentDAO.getStudentByNumber(student.getStudentNumber()) != null) {
                     return new Response(ResponseStatus.ERROR, "Student number already exists");
                 }
-                
+
                 // Hash password before storing
                 String hashedPassword = PasswordUtil.hashPassword(student.getPassword());
                 student.setPassword(hashedPassword);
-                
+
                 boolean success = studentDAO.addStudent(student);
                 if (success) {
                     return new Response(ResponseStatus.SUCCESS, "Student added successfully");
@@ -297,27 +301,27 @@ public class Server {
         private Response handleAddCourse(Request request) {
             try {
                 Course course = (Course) request.getData();
-                
+
                 // Validation
                 if (!InputValidator.isValidCourseCode(course.getCourseCode())) {
                     return new Response(ResponseStatus.ERROR, "Invalid course code format (e.g., ADP262S)");
                 }
-                
+
                 if (course.getTitle() == null || course.getTitle().trim().isEmpty()) {
                     return new Response(ResponseStatus.ERROR, "Course title is required");
                 }
-                
+
                 if (course.getInstructor() == null || course.getInstructor().trim().isEmpty()) {
                     return new Response(ResponseStatus.ERROR, "Instructor name is required");
                 }
-                
+
                 CourseDAO courseDAO = new CourseDAO();
-                
+
                 // Check if course already exists
                 if (courseDAO.courseExists(course.getCourseCode())) {
                     return new Response(ResponseStatus.ERROR, "Course code already exists");
                 }
-                
+
                 boolean success = courseDAO.addCourse(course);
                 if (success) {
                     return new Response(ResponseStatus.SUCCESS, "Course added successfully");
@@ -351,13 +355,13 @@ public class Server {
         private Response handleGetCourseEnrollments(Request request) {
             try {
                 String courseCode = (String) request.getData();
-                
+
                 CourseDAO courseDAO = new CourseDAO();
                 Course course = courseDAO.getCourseByCode(courseCode);
                 if (course == null) {
                     return new Response(ResponseStatus.ERROR, "Course not found: " + courseCode);
                 }
-                
+
                 EnrollmentDAO enrollmentDAO = new EnrollmentDAO();
                 List<Student> students = enrollmentDAO.getCourseEnrollments(courseCode);
                 if (students.isEmpty()) {
@@ -366,6 +370,42 @@ public class Server {
                 return new Response(ResponseStatus.SUCCESS, students);
             } catch (Exception e) {
                 System.err.println("Error getting course enrollments: " + e.getMessage());
+                return new Response(ResponseStatus.ERROR, "Failed to load course enrollments");
+            }
+        }
+
+        // NEW: Handler method for getting students in the same courses
+        private Response handleGetStudentsInMyCourses(Request request) {
+            try {
+                String studentNumber = (String) request.getData();
+
+                if (!InputValidator.isValidStudentNumber(studentNumber)) {
+                    return new Response(ResponseStatus.ERROR, "Invalid student number");
+                }
+
+                EnrollmentDAO enrollmentDAO = new EnrollmentDAO();
+
+                // First get all courses the student is enrolled in
+                List<Course> studentCourses = enrollmentDAO.getStudentEnrollments(studentNumber);
+
+                if (studentCourses.isEmpty()) {
+                    return new Response(ResponseStatus.SUCCESS, new HashMap<>(),
+                            "You are not enrolled in any courses");
+                }
+
+                // For each course, get the enrolled students
+                Map<String, List<Student>> courseEnrollments = new HashMap<>();
+                for (Course course : studentCourses) {
+                    List<Student> students = enrollmentDAO.getCourseEnrollments(course.getCourseCode());
+                    // Remove the current student from the list
+                    students.removeIf(student -> student.getStudentNumber().equals(studentNumber));
+                    courseEnrollments.put(course.getCourseCode() + " - " + course.getTitle(), students);
+                }
+
+                return new Response(ResponseStatus.SUCCESS, courseEnrollments);
+
+            } catch (Exception e) {
+                System.err.println("Error getting students in courses: " + e.getMessage());
                 return new Response(ResponseStatus.ERROR, "Failed to load course enrollments");
             }
         }

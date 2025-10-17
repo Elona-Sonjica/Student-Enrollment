@@ -20,6 +20,8 @@ public class AdminDashboard extends JFrame {
     private JTable coursesTable;
     private DefaultTableModel studentsModel;
     private DefaultTableModel coursesModel;
+    private JComboBox<String> studentComboBox; // For student selection
+    private JComboBox<String> courseComboBox; // For course selection
 
     public AdminDashboard(ClientCommunicator client) {
         this.client = client;
@@ -45,7 +47,7 @@ public class AdminDashboard extends JFrame {
 
         // Main panel with header and tabs
         JPanel mainPanel = new JPanel(new BorderLayout());
-        
+
         // Add header
         mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
 
@@ -58,11 +60,14 @@ public class AdminDashboard extends JFrame {
         // Courses Management Tab
         tabbedPane.addTab("Manage Courses", createCoursesPanel());
 
-        // Enrollment Management Tab
-        tabbedPane.addTab("View Enrollments", createEnrollmentsPanel());
+        // Enrollment Management Tab - View by Course (existing)
+        tabbedPane.addTab("Enrollments by Course", createCourseEnrollmentsPanel());
+
+        // NEW: Enrollment Management Tab - View by Student
+        tabbedPane.addTab("Enrollments by Student", createStudentEnrollmentsPanel());
 
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
-        
+
         add(mainPanel);
         setVisible(true);
     }
@@ -71,7 +76,7 @@ public class AdminDashboard extends JFrame {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         headerPanel.setBackground(new Color(240, 240, 240));
-        
+
         // Logo on the left
         JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         logoPanel.setBackground(new Color(240, 240, 240));
@@ -86,15 +91,15 @@ public class AdminDashboard extends JFrame {
             logoLabel.setForeground(Color.BLUE);
         }
         logoPanel.add(logoLabel);
-        
+
         // Title in the center
         JLabel titleLabel = new JLabel("Admin Portal - Student Enrollment System", JLabel.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
         titleLabel.setForeground(new Color(0, 51, 102)); // Dark blue color
-        
+
         headerPanel.add(logoPanel, BorderLayout.WEST);
         headerPanel.add(titleLabel, BorderLayout.CENTER);
-        
+
         return headerPanel;
     }
 
@@ -107,13 +112,13 @@ public class AdminDashboard extends JFrame {
         toolBar.setFloatable(false);
         JButton addStudentButton = new JButton("Add New Student");
         JButton refreshButton = new JButton("Refresh List");
-        
+
         // Style buttons
         addStudentButton.setBackground(new Color(0, 102, 204));
         addStudentButton.setForeground(Color.WHITE);
         refreshButton.setBackground(new Color(102, 102, 102));
         refreshButton.setForeground(Color.WHITE);
-        
+
         toolBar.add(addStudentButton);
         toolBar.add(Box.createHorizontalStrut(10));
         toolBar.add(refreshButton);
@@ -131,7 +136,7 @@ public class AdminDashboard extends JFrame {
         studentsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         studentsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         studentsTable.setRowHeight(25);
-        
+
         JScrollPane scrollPane = new JScrollPane(studentsTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Registered Students"));
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -159,13 +164,13 @@ public class AdminDashboard extends JFrame {
         toolBar.setFloatable(false);
         JButton addCourseButton = new JButton("Add New Course");
         JButton refreshButton = new JButton("Refresh List");
-        
+
         // Style buttons
         addCourseButton.setBackground(new Color(0, 102, 204));
         addCourseButton.setForeground(Color.WHITE);
         refreshButton.setBackground(new Color(102, 102, 102));
         refreshButton.setForeground(Color.WHITE);
-        
+
         toolBar.add(addCourseButton);
         toolBar.add(Box.createHorizontalStrut(10));
         toolBar.add(refreshButton);
@@ -183,7 +188,7 @@ public class AdminDashboard extends JFrame {
         coursesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         coursesTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         coursesTable.setRowHeight(25);
-        
+
         JScrollPane scrollPane = new JScrollPane(coursesTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Available Courses"));
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -202,28 +207,28 @@ public class AdminDashboard extends JFrame {
         return panel;
     }
 
-    private JPanel createEnrollmentsPanel() {
+    private JPanel createCourseEnrollmentsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
+
         // Course selection panel
         JPanel topPanel = new JPanel(new FlowLayout());
         topPanel.setBorder(BorderFactory.createTitledBorder("Course Selection"));
         JLabel courseLabel = new JLabel("Select Course:");
         courseLabel.setFont(new Font("Arial", Font.BOLD, 12));
-        
-        JComboBox<String> courseComboBox = new JComboBox<>();
+
+        courseComboBox = new JComboBox<>();
         courseComboBox.setPreferredSize(new Dimension(300, 25));
-        
+
         JButton viewEnrollmentsButton = new JButton("View Enrollments");
         JButton refreshButton = new JButton("Refresh Courses");
-        
+
         // Style buttons
         viewEnrollmentsButton.setBackground(new Color(0, 102, 204));
         viewEnrollmentsButton.setForeground(Color.WHITE);
         refreshButton.setBackground(new Color(102, 102, 102));
         refreshButton.setForeground(Color.WHITE);
-        
+
         topPanel.add(courseLabel);
         topPanel.add(courseComboBox);
         topPanel.add(Box.createHorizontalStrut(10));
@@ -244,7 +249,7 @@ public class AdminDashboard extends JFrame {
         enrollmentsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         enrollmentsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         enrollmentsTable.setRowHeight(25);
-        
+
         JScrollPane scrollPane = new JScrollPane(enrollmentsTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Course Enrollments"));
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -279,15 +284,93 @@ public class AdminDashboard extends JFrame {
         return panel;
     }
 
+    // NEW: Create student enrollments panel
+    private JPanel createStudentEnrollmentsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Student selection panel
+        JPanel topPanel = new JPanel(new FlowLayout());
+        topPanel.setBorder(BorderFactory.createTitledBorder("Student Selection"));
+        JLabel studentLabel = new JLabel("Select Student:");
+        studentLabel.setFont(new Font("Arial", Font.BOLD, 12));
+
+        studentComboBox = new JComboBox<>();
+        studentComboBox.setPreferredSize(new Dimension(300, 25));
+
+        JButton viewEnrollmentsButton = new JButton("View Enrollments");
+        JButton refreshButton = new JButton("Refresh Students");
+
+        // Style buttons
+        viewEnrollmentsButton.setBackground(new Color(0, 102, 204));
+        viewEnrollmentsButton.setForeground(Color.WHITE);
+        refreshButton.setBackground(new Color(102, 102, 102));
+        refreshButton.setForeground(Color.WHITE);
+
+        topPanel.add(studentLabel);
+        topPanel.add(studentComboBox);
+        topPanel.add(Box.createHorizontalStrut(10));
+        topPanel.add(viewEnrollmentsButton);
+        topPanel.add(Box.createHorizontalStrut(5));
+        topPanel.add(refreshButton);
+        panel.add(topPanel, BorderLayout.NORTH);
+
+        // Enrollments table
+        String[] columns = {"Course Code", "Title", "Instructor"};
+        DefaultTableModel enrollmentsModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table non-editable
+            }
+        };
+        JTable enrollmentsTable = new JTable(enrollmentsModel);
+        enrollmentsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        enrollmentsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        enrollmentsTable.setRowHeight(25);
+
+        JScrollPane scrollPane = new JScrollPane(enrollmentsTable);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Student Enrollments"));
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        // Status label
+        JLabel statusLabel = new JLabel("Select a student to view their enrollments");
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        panel.add(statusLabel, BorderLayout.SOUTH);
+
+        // Load students into combo box
+        loadStudentsIntoComboBox(studentComboBox);
+
+        // Add action listeners
+        viewEnrollmentsButton.addActionListener(e -> {
+            if (studentComboBox.getSelectedIndex() != -1 && !studentComboBox.getSelectedItem().toString().contains("No students")) {
+                String selected = studentComboBox.getSelectedItem().toString();
+                String studentNumber = selected.split(" - ")[0];
+                loadStudentEnrollments(studentNumber, enrollmentsModel, statusLabel);
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a student first", "No Student Selected", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
+        refreshButton.addActionListener(e -> {
+            loadStudentsIntoComboBox(studentComboBox);
+            enrollmentsModel.setRowCount(0);
+            statusLabel.setText("Select a student to view their enrollments");
+        });
+
+        return panel;
+    }
+
     private void loadStudents() {
         try {
             Request request = new Request(RequestType.GET_ALL_STUDENTS);
             Response response = client.sendRequest(request);
-            
+
             if (response.isSuccess()) {
                 List<Student> students = (List<Student>) response.getData();
                 studentsModel.setRowCount(0);
-                
+
                 if (students.isEmpty()) {
                     // Show message in table when no students
                     studentsModel.setRowCount(1);
@@ -295,10 +378,10 @@ public class AdminDashboard extends JFrame {
                 } else {
                     for (Student student : students) {
                         studentsModel.addRow(new Object[]{
-                            student.getStudentNumber(),
-                            student.getName(),
-                            student.getSurname(),
-                            student.getEmail()
+                                student.getStudentNumber(),
+                                student.getName(),
+                                student.getSurname(),
+                                student.getEmail()
                         });
                     }
                 }
@@ -315,11 +398,11 @@ public class AdminDashboard extends JFrame {
         try {
             Request request = new Request(RequestType.GET_ALL_COURSES);
             Response response = client.sendRequest(request);
-            
+
             if (response.isSuccess()) {
                 List<Course> courses = (List<Course>) response.getData();
                 coursesModel.setRowCount(0);
-                
+
                 if (courses.isEmpty()) {
                     // Show message in table when no courses
                     coursesModel.setRowCount(1);
@@ -327,9 +410,9 @@ public class AdminDashboard extends JFrame {
                 } else {
                     for (Course course : courses) {
                         coursesModel.addRow(new Object[]{
-                            course.getCourseCode(),
-                            course.getTitle(),
-                            course.getInstructor()
+                                course.getCourseCode(),
+                                course.getTitle(),
+                                course.getInstructor()
                         });
                     }
                 }
@@ -346,11 +429,11 @@ public class AdminDashboard extends JFrame {
         try {
             Request request = new Request(RequestType.GET_ALL_COURSES);
             Response response = client.sendRequest(request);
-            
+
             if (response.isSuccess()) {
                 List<Course> courses = (List<Course>) response.getData();
                 comboBox.removeAllItems();
-                
+
                 if (courses.isEmpty()) {
                     comboBox.addItem("No courses available - Add courses first");
                 } else {
@@ -365,30 +448,86 @@ public class AdminDashboard extends JFrame {
         }
     }
 
+    // NEW: Load students into combo box
+    private void loadStudentsIntoComboBox(JComboBox<String> comboBox) {
+        try {
+            Request request = new Request(RequestType.GET_ALL_STUDENTS);
+            Response response = client.sendRequest(request);
+
+            if (response.isSuccess()) {
+                List<Student> students = (List<Student>) response.getData();
+                comboBox.removeAllItems();
+
+                if (students.isEmpty()) {
+                    comboBox.addItem("No students registered - Add students first");
+                } else {
+                    for (Student student : students) {
+                        comboBox.addItem(student.getStudentNumber() + " - " + student.getName() + " " + student.getSurname());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading students: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
     private void loadCourseEnrollments(String courseCode, DefaultTableModel model, JLabel statusLabel) {
         try {
             Request request = new Request(RequestType.GET_COURSE_ENROLLMENTS, courseCode);
             Response response = client.sendRequest(request);
-            
+
             if (response.isSuccess()) {
                 List<Student> students = (List<Student>) response.getData();
                 model.setRowCount(0);
-                
+
                 if (students.isEmpty()) {
                     statusLabel.setText("No students enrolled in " + courseCode);
                 } else {
                     for (Student student : students) {
                         model.addRow(new Object[]{
-                            student.getStudentNumber(),
-                            student.getName(),
-                            student.getSurname(),
-                            student.getEmail()
+                                student.getStudentNumber(),
+                                student.getName(),
+                                student.getSurname(),
+                                student.getEmail()
                         });
                     }
                     statusLabel.setText(students.size() + " students enrolled in " + courseCode);
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Error loading enrollments: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    // NEW: Load student enrollments - USING EXISTING REQUEST TYPE
+    private void loadStudentEnrollments(String studentNumber, DefaultTableModel model, JLabel statusLabel) {
+        try {
+            // Use the existing GET_STUDENT_ENROLLMENTS request type
+            Request request = new Request(RequestType.GET_STUDENT_ENROLLMENTS, studentNumber);
+            Response response = client.sendRequest(request);
+
+            if (response.isSuccess()) {
+                List<Course> courses = (List<Course>) response.getData();
+                model.setRowCount(0);
+
+                if (courses.isEmpty()) {
+                    statusLabel.setText("No enrollments found for student " + studentNumber);
+                } else {
+                    for (Course course : courses) {
+                        model.addRow(new Object[]{
+                                course.getCourseCode(),
+                                course.getTitle(),
+                                course.getInstructor()
+                        });
+                    }
+                    statusLabel.setText(courses.size() + " courses enrolled for student " + studentNumber);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error loading student enrollments: " + response.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -415,7 +554,7 @@ public class AdminDashboard extends JFrame {
         JLabel surnameLabel = new JLabel("Surname*:");
         JLabel emailLabel = new JLabel("Email*:");
         JLabel passwordLabel = new JLabel("Password*:");
-        
+
         Font boldFont = new Font("Arial", Font.BOLD, 12);
         numberLabel.setFont(boldFont);
         nameLabel.setFont(boldFont);
@@ -500,7 +639,7 @@ public class AdminDashboard extends JFrame {
         JLabel codeLabel = new JLabel("Course Code*:");
         JLabel titleLabel = new JLabel("Course Title*:");
         JLabel instructorLabel = new JLabel("Instructor*:");
-        
+
         Font boldFont = new Font("Arial", Font.BOLD, 12);
         codeLabel.setFont(boldFont);
         titleLabel.setFont(boldFont);

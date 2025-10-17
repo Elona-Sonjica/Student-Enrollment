@@ -1,11 +1,11 @@
 ----------------------------------------------------------------
-Fri Oct 17 02:11:43 SAST 2025:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.15.2.0 - (1873585): instance a816c00e-0199-ef82-0b7d-000007c84710 
-on database directory C:\Users\elzas\OneDrive - Cape Peninsula University of Technology\Documents\NetBeansProjects\studentEnrollment\StudentEnrolmentDB with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@70dea4e 
-Loaded from file:/C:/Users/elzas/.m2/repository/org/apache/derby/derby/10.15.2.0/derby-10.15.2.0.jar
+Fri Oct 17 05:38:41 SAST 2025:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.15.2.0 - (1873585): instance a816c00e-0199-f03f-8fac-000007300000 
+on database directory C:\Users\Dollar_sign\IdeaProjects\Student-Enrollment\StudentEnrolmentDB with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@76ed5528 
+Loaded from file:/C:/Users/Dollar_sign/.m2/repository/org/apache/derby/derby/10.15.2.0/derby-10.15.2.0.jar
 java.vendor=Oracle Corporation
 java.runtime.version=22.0.2+9-70
-user.dir=C:\Users\elzas\OneDrive - Cape Peninsula University of Technology\Documents\NetBeansProjects\studentEnrollment
+user.dir=C:\Users\Dollar_sign\IdeaProjects\Student-Enrollment
 os.name=Windows 11
 os.arch=amd64
 os.version=10.0
